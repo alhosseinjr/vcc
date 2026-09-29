@@ -3,7 +3,7 @@ import { chunkLines } from "./chunking";
 import type { Issue } from "../types";
 
 const URL = "https://api.groq.com/openai/v1/chat/completions";
-const MODEL = "openai/gpt-oss-20b";
+const MODEL = "openai/gpt-oss-120b";
 export const MAX_CHUNKS_PER_FILE = 3;
 
 const REVIEW_SYSTEM = `You are a senior security engineer reviewing AI-generated code for a NON-TECHNICAL user.
