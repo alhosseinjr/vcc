@@ -1,0 +1,17 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: 0 0% 100%; --fg: 240 10% 8%; --muted: 240 5% 42%;
+  --card: 240 20% 98%; --border: 240 6% 90%;
+  --accent: 252 87% 58%; --accent-fg: 0 0% 100%;
+}
+.dark {
+  --bg: 240 10% 5%; --fg: 0 0% 96%; --muted: 240 5% 65%;
+  --card: 240 8% 9%; --border: 240 6% 18%;
+  --accent: 252 90% 68%; --accent-fg: 240 10% 5%;
+}
+body { @apply bg-bg text-fg antialiased; }
+:focus-visible { @apply outline-2 outline-offset-2 outline-accent; }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
