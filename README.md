@@ -56,25 +56,6 @@ Install Vibe-Coded Cleanup as a Progressive Web App (PWA) and run supported rule
 
 ---
 
-## 📸 Screenshots & Demo
-
-Watch the 60-second demo video: [Watch Demo](#)
-
-<p align="center">
-  <img src="https://placehold.co/600x400/png?text=Homepage" width="48%" />
-  <img src="https://placehold.co/600x400/png?text=Scan+Progress" width="48%" />
-</p>
-<p align="center">
-  <img src="https://placehold.co/600x400/png?text=Results+Dashboard" width="48%" />
-  <img src="https://placehold.co/600x400/png?text=Issue+Explanation" width="48%" />
-</p>
-<p align="center">
-  <img src="https://placehold.co/600x400/png?text=Auto-Fix+Diff" width="48%" />
-  <img src="https://placehold.co/600x400/png?text=Learning+Center" width="48%" />
-</p>
-
----
-
 ## How It Works
 
 1. Open **[Vibe-Coded Cleanup](https://vibe-coded-cleanup.vercel.app)**.
