@@ -14,7 +14,7 @@ const FIX_SYSTEM = `You fix one problem in code for a non-technical user. Return
 interface ChatResult { text: string | null; rateLimited: boolean }
 const cache = new Map<string, string>(); // same code + same prompt = same answer, saves free-tier quota
 
-/** One Groq call with response caching and 429 retry (respects retry-after, max ~3s per wait). Never throws. */
+/** One Groq call with response caching and 429 retry. Never throws. */
 async function groqChat(apiKey: string, system: string, user: string, maxTokens: number, json: boolean): Promise<ChatResult> {
   const ck = createHash("sha256").update(system + user).digest("hex");
   const hit = cache.get(ck);
@@ -30,15 +30,28 @@ async function groqChat(apiKey: string, system: string, user: string, maxTokens:
       });
       if (res.status === 429) {
         if (attempt === 2) return { text: null, rateLimited: true };
-        await new Promise((r) => setTimeout(r, Math.min(Number(res.headers.get("retry-after")) || 1, 3) * 1000));
+        const retryAfter = Number(res.headers.get("retry-after")) || 2;
+        await new Promise((r) => setTimeout(r, Math.min(retryAfter, 8) * 1000));
         continue;
       }
-      if (!res.ok) return { text: null, rateLimited: false };
+      if (!res.ok) {
+        if (res.status >= 500 && attempt < 2) {
+          await new Promise((r) => setTimeout(r, 2000));
+          continue;
+        }
+        return { text: null, rateLimited: false };
+      }
       const data = (await res.json()) as { choices?: { message?: { content?: string } }[] };
       const text = data.choices?.[0]?.message?.content ?? null;
       if (text !== null) { if (cache.size > 200) cache.clear(); cache.set(ck, text); }
       return { text, rateLimited: false };
-    } catch { return { text: null, rateLimited: false }; }
+    } catch {
+      if (attempt < 2) {
+        await new Promise((r) => setTimeout(r, 2000));
+        continue;
+      }
+      return { text: null, rateLimited: false };
+    }
   }
   return { text: null, rateLimited: true };
 }
@@ -54,7 +67,11 @@ export async function groqReview(apiKey: string, file: string, content: string):
     const r = await groqChat(apiKey, REVIEW_SYSTEM, `File: ${file}\n${numbered}`, 2048, true);
     if (r.rateLimited) { rateLimited = true; break; }
     let parsed: { issues?: Partial<Issue>[] } = {};
-    try { parsed = JSON.parse(r.text ?? "{}") as { issues?: Partial<Issue>[] }; } catch { continue; }
+    try {
+      // Strip markdown code fences if the model hallucinated them despite json_object mode
+      const cleanJson = (r.text ?? "{}").replace(/^```json\s*|```\s*$/gi, "").trim();
+      parsed = JSON.parse(cleanJson) as { issues?: Partial<Issue>[] };
+    } catch { continue; }
     for (const x of parsed.issues ?? []) {
       const line = Number(x.line) || 0;
       const key = `${line}:${x.title}`;
