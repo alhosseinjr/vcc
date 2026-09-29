@@ -1,6 +1,6 @@
 "use client";
 import { useState, useRef } from "react";
-import { parseGitHubUrl, fetchGitHubTree, fetchGitHubFile, isLikelyText } from "@/lib/github";
+import { parseGitHubUrl, fetchGitHubTree, fetchGitHubFile, isLikelyText, resolveDefaultBranch } from "@/lib/github";
 import { Button } from "../ui/Button";
 import { detectLanguage } from "@/lib/utils";
 import { useScanInput, type InputFile } from "@/store/scan-store";
@@ -29,11 +29,14 @@ export function GitHubScanner({ onScan, busy }: { onScan: (url?: string) => void
 
     try {
       let token = ""; try { token = localStorage.getItem("vcc:githubToken") ?? ""; } catch {}
-      const tree = await fetchGitHubTree(parsed.owner, parsed.repo, parsed.branch, token, ctrl.signal);
-      
+      const branch = parsed.branch === "HEAD"
+        ? await resolveDefaultBranch(parsed.owner, parsed.repo, token, ctrl.signal)
+        : parsed.branch;
+      const tree = await fetchGitHubTree(parsed.owner, parsed.repo, branch, token, ctrl.signal);
+
       let filesToFetch = tree.filter((t) => t.type === "blob" && isLikelyText(t.path));
       if (parsed.path) {
-        filesToFetch = filesToFetch.filter((f) => f.path.startsWith(parsed.path + "/"));
+        filesToFetch = filesToFetch.filter((f) => f.path === parsed.path || f.path.startsWith(parsed.path + "/"));
       }
 
       if (filesToFetch.length > 300) {
@@ -50,7 +53,7 @@ export function GitHubScanner({ onScan, busy }: { onScan: (url?: string) => void
           chunk.map(async (f) => {
             if (f.size && f.size > 1024 * 1024) return null; // skip >1MB
             try {
-              const content = await fetchGitHubFile(parsed.owner, parsed.repo, parsed.branch, f.path, token, ctrl.signal);
+              const content = await fetchGitHubFile(parsed.owner, parsed.repo, branch, f.path, token, ctrl.signal);
               i++;
               setProgress(`Fetching file ${i}/${filesToFetch.length}...`);
               return { name: f.path, content };

@@ -1,5 +1,5 @@
 // Strict-ish CSP. cdn.jsdelivr.net is allowed only because @monaco-editor/react loads Monaco from there. Next.js needs inline scripts for hydration, so we allow 'unsafe-inline'
-// for scripts but never 'unsafe-eval' in production. Groq is the only external API.
+// for scripts but never 'unsafe-eval' in production. Groq (AI) and GitHub (repo fetch) are the only external APIs.
 const isDev = process.env.NODE_ENV !== "production";
 const csp = [
   "default-src 'self'",
@@ -8,7 +8,7 @@ const csp = [
   "font-src 'self' data: https://cdn.jsdelivr.net",
   "worker-src 'self' blob:",
   "img-src 'self' data: blob:",
-  "connect-src 'self' https://api.groq.com",
+  "connect-src 'self' https://api.groq.com https://api.github.com https://raw.githubusercontent.com",
   "frame-ancestors 'none'",
 ].join("; ");
 

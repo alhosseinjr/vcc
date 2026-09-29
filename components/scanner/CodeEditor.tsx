@@ -50,7 +50,7 @@ export function CodeEditor() {
           onChange={(e) => setCode(e.target.value)}
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
-          placeholder={`// Paste your ${ext} code here...\\\n\\\nfunction example() {\\\n  console.log("Ready to scan!");\\\n}`}
+          placeholder={`// Paste your ${ext} code here...\n\nfunction example() {\n  console.log("Ready to scan!");\n}`}
           spellCheck={false}
         />
         

@@ -28,7 +28,9 @@ export function Scanner() {
     try {
       let key = ""; try { key = localStorage.getItem("vcc:groqKey") ?? ""; } catch { /* ignore */ }
       const prefs = loadPrefs();
-      const chosen = files.filter((f) => f.name.endsWith("package.json") || prefs.languages.includes(f.language));
+      // Read from the store so GitHub fetch → scan sees files just added in this tick.
+      const staged = useScanInput.getState().files;
+      const chosen = staged.filter((f) => f.name.endsWith("package.json") || prefs.languages.includes(f.language));
       if (chosen.length === 0) throw new Error("None of your files match the languages enabled in Settings.");
       const payload = chosen.map(({ name, content }) => ({ name, content }));
       const res = await fetch("/api/analyze", { method: "POST", signal: ctrl.signal, headers: { "Content-Type": "application/json", ...(key && { "x-groq-key": key }) }, body: JSON.stringify({ files: payload }) });

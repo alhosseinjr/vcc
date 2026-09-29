@@ -17,6 +17,15 @@ describe("parseGitHubUrl", () => {
     expect(res).toEqual({ owner: "facebook", repo: "react", branch: "main", path: "packages/react" });
   });
 
+  it("strips .git, www, and blob file paths", () => {
+    expect(parseGitHubUrl("https://www.github.com/facebook/react.git")).toEqual({
+      owner: "facebook", repo: "react", branch: "HEAD", path: "",
+    });
+    expect(parseGitHubUrl("https://github.com/facebook/react/blob/main/packages/react/index.js")).toEqual({
+      owner: "facebook", repo: "react", branch: "main", path: "packages/react/index.js",
+    });
+  });
+
   it("returns null for non-github urls", () => {
     expect(parseGitHubUrl("https://gitlab.com/facebook/react")).toBeNull();
   });

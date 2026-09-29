@@ -26,15 +26,15 @@ export function DropZone({ onScan, busy }: { onScan: () => void; busy: boolean }
         try { accepted.push(...(await extractZip(file))); } catch (err) { setError(err instanceof Error ? err.message : "Couldn't open that ZIP."); }
         continue;
       }
-      if (file.size === 0) { setError(`"\${file.name}" is empty.`); continue; }
-      if (file.size > LIMITS.perFileBytes) { setError(`"\${file.name}" is over the 5 MB limit (\${formatBytes(file.size)}).`); continue; }
+      if (file.size === 0) { setError(`"${file.name}" is empty.`); continue; }
+      if (file.size > LIMITS.perFileBytes) { setError(`"${file.name}" is over the 5 MB limit (${formatBytes(file.size)}).`); continue; }
       if (total + file.size > LIMITS.totalBytes) { setError("Total upload size would exceed 50 MB."); break; }
       try {
         const content = await file.text();
-        if (content.includes("\\0")) { setError(`"\${file.name}" appears to be a binary file. Only text code files are supported.`); continue; }
+        if (content.includes("\0")) { setError(`"${file.name}" appears to be a binary file. Only text code files are supported.`); continue; }
         accepted.push({ name: file.name, language: detectLanguage(file.name), content, size: file.size });
         total += file.size;
-      } catch { setError(`Couldn't read "\${file.name}". Please try again.`); }
+      } catch { setError(`Couldn't read "${file.name}". Please try again.`); }
     }
     if (accepted.length) addFiles(accepted);
   }, [files, addFiles]);

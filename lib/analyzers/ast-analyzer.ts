@@ -51,34 +51,42 @@ export function astAnalyze(file: string, content: string): Issue[] {
 
   walk(ast, (n, path) => {
     if (n.type === "CatchClause" && n.body.body.length === 0)
-      add(n, { severity: "medium", category: "best-practice", confidence: "high", title: "Errors silently ignored",
+      add(n, {
+        severity: "medium", category: "best-practice", confidence: "high", title: "Errors silently ignored",
         explanation: "This catch block is empty, so when something fails nobody finds out and the app keeps going in a broken state.",
-        analogy: "Like a smoke alarm with the battery removed.", fix: "catch (err) {\n  console.error(err); // or send to an error tracker\n  // show the user a friendly message\n}" });
+        analogy: "Like a smoke alarm with the battery removed.", fix: "catch (err) {\n  console.error(err); // or send to an error tracker\n  // show the user a friendly message\n}"
+      });
 
     if (n.type === "AwaitExpression") {
       let inLoop = false;
       for (let i = path.length - 1; i >= 0; i--) { if (FUNCS.has(path[i].type)) break; if (LOOPS.has(path[i].type)) { inLoop = true; break; } }
       const src = content.slice(n.start ?? 0, n.end ?? 0);
       if (inLoop && DB_CALL.test(src))
-        add(n, { severity: "high", category: "performance", confidence: "medium", title: "Database or network call inside a loop (N+1)",
+        add(n, {
+          severity: "high", category: "performance", confidence: "medium", title: "Database or network call inside a loop (N+1)",
           explanation: "The app makes one request per item, one after another. With 100 items that's 100 slow round trips.",
-          analogy: "Like driving to the store once for each grocery item.", fix: "// Fetch everything at once\nconst results = await Promise.all(items.map((i) => fetchItem(i)));\n// or use a single query: .in('id', ids)" });
+          analogy: "Like driving to the store once for each grocery item.", fix: "// Fetch everything at once\nconst results = await Promise.all(items.map((i) => fetchItem(i)));\n// or use a single query: .in('id', ids)"
+        });
     }
 
     if (FUNCS.has(n.type)) {
       const score = complexity(n);
       if (score > COMPLEXITY_LIMIT)
-        add(n, { severity: "low", category: "best-practice", confidence: "high", title: `Function is very complex (score ${score})`,
+        add(n, {
+          severity: "low", category: "best-practice", confidence: "high", title: `Function is very complex (score ${score})`,
           explanation: "This function has many branches, so it's hard to understand and likely hides bugs.",
-          analogy: "Like a recipe with 20 'if this, then that' notes.", fix: "Split it into smaller functions that each do one thing, and return early to avoid deep nesting." });
+          analogy: "Like a recipe with 20 'if this, then that' notes.", fix: "Split it into smaller functions that each do one thing, and return early to avoid deep nesting."
+        });
       const fn = n as Node & { async?: boolean };
       if (fn.async) {
         let hasAwait = false, hasTry = false;
         walk(n, (c) => { if (c.type === "AwaitExpression") hasAwait = true; if (c.type === "TryStatement") hasTry = true; });
         if (hasAwait && !hasTry)
-          add(n, { severity: "low", category: "best-practice", confidence: "low", title: "Async code without error handling",
+          add(n, {
+            severity: "low", category: "best-practice", confidence: "low", title: "Async code without error handling",
             explanation: "If any awaited step fails, this function crashes with no friendly message.",
-            analogy: "Like a tightrope walker with no net.", fix: "try {\n  // your await calls\n} catch (err) {\n  // handle or report the error\n}" });
+            analogy: "Like a tightrope walker with no net.", fix: "try {\n  // your await calls\n} catch (err) {\n  // handle or report the error\n}"
+          });
       }
     }
   });
