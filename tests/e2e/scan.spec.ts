@@ -4,6 +4,11 @@ const VULNERABLE = 'const apiKey = "sk-live-1234567890";\neval(userInput);\ntry 
 
 async function scanSample(page: import("@playwright/test").Page) {
   await page.goto("/");
+  // Dismiss onboarding modal if it appears (CI has fresh localStorage)
+  const skipBtn = page.getByText("Skip tutorial");
+  if (await skipBtn.isVisible({ timeout: 1000 }).catch(() => false)) {
+    await skipBtn.click();
+  }
   await page.locator('input[type="file"]').setInputFiles({ name: "app.js", mimeType: "text/javascript", buffer: Buffer.from(VULNERABLE) });
   await page.getByRole("button", { name: /^Scan 1 file/ }).click();
   await page.waitForURL(/\/scan\//);
@@ -18,6 +23,10 @@ test("scan shows issues, a score, and auto-fixes", async ({ page }) => {
 
 test("unsupported files show a friendly error", async ({ page }) => {
   await page.goto("/");
+  const skipBtn = page.getByText("Skip tutorial");
+  if (await skipBtn.isVisible({ timeout: 1000 }).catch(() => false)) {
+    await skipBtn.click();
+  }
   await page.locator('input[type="file"]').setInputFiles({ name: "notes.exe", mimeType: "application/octet-stream", buffer: Buffer.from("x") });
   await expect(page.getByText("isn't a supported file type")).toBeVisible();
 });
