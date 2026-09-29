@@ -14,7 +14,6 @@
   "dependencies": {
     "@babel/parser": "^7.26.0",
     "@babel/types": "^7.26.0",
-    "@monaco-editor/react": "^4.6.0",
     "@tanstack/react-virtual": "^3.14.13",
     "clsx": "^2.1.1",
     "framer-motion": "^11.11.0",
