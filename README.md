@@ -1,96 +1,303 @@
-# Vibe-Coded Cleanup 🧹✨
+# Vibe-Coded Cleanup
 
-A free, instantly-available code review tool built specifically for non-technical creators using AI coding assistants.
+**AI-powered code review and security analysis for apps built with AI coding assistants.**
 
-When you use AI (like ChatGPT, Claude, or Cursor) to build an app, it often takes shortcuts. It leaves secrets in the code, creates security vulnerabilities, and writes slow database queries. **Vibe-Coded Cleanup** finds these hidden issues and explains them in plain English, providing safe, copy-paste fixes so you can confidently launch your app.
+Vibe-Coded Cleanup helps non-technical creators and AI-assisted developers identify hidden security vulnerabilities, exposed secrets, inefficient database queries, and other issues commonly introduced by AI-generated code.
 
----
+Instead of overwhelming you with technical jargon, it explains each issue in plain English, shows why it matters, and provides safe, copy-paste fixes — so you can understand, improve, and confidently ship your application.
 
-## 🌟 Features
+## Overview
 
-- **No installation required**: Runs entirely in your browser.
-- **100% Free**: Leverages free-tier APIs (Groq) and local storage so it costs nothing to run.
-- **Plain English**: No jargon. Every issue includes a real-world analogy.
-- **Auto-Fixes**: Click a button to get corrected code, or download a patched ZIP.
-- **Compare Scans**: Track your progress over time and watch your Health Score improve.
-- **Learning Center**: Build your knowledge with bite-sized, interactive security lessons.
-- **Offline Capable**: Install it as a PWA and scan rule-based issues without an internet connection!
+AI coding assistants such as ChatGPT, Claude, and Cursor make it easier than ever to build complete applications without being an experienced software engineer.
 
----
+However, generated code can also introduce problems that are difficult to spot:
 
-## 🚀 How to use
+* Exposed API keys and secrets
+* Insecure configurations
+* Potential security vulnerabilities
+* Inefficient database queries
+* Problematic coding patterns
+* Performance issues
+* Other common AI-generated code mistakes
 
-1. Go to [vibe-coded-cleanup.vercel.app](https://vibe-coded-cleanup.vercel.app)
-2. Drag and drop your project folder (or a ZIP file) into the browser.
-3. Review the issues and click "Fix all" to download a patched, secure version of your app.
+**Vibe-Coded Cleanup** acts as a second pair of eyes for your project, combining deterministic code analysis with AI-powered semantic review.
 
 ---
 
-## 🏗️ Architecture & Stack
+## Features
 
-Vibe-Coded Cleanup is built for speed, privacy, and simplicity.
+### Browser-Based
 
-### Tech Stack
-- **Framework**: Next.js 14 (App Router)
-- **Styling**: Tailwind CSS
-- **Icons**: Lucide React
-- **State Management**: Zustand
-- **Editor**: Monaco Editor (lazy-loaded)
-- **AI Integration**: Groq API (Llama 3 70B)
-- **Testing**: Playwright (E2E), Vitest (Unit)
+No installation or complex setup is required. Upload your project directly from your browser and start scanning immediately.
 
-### Core Systems
+### Free to Use
 
-1. **Two-Layer Analysis Engine**:
-   - **Rule-based (Client & Edge)**: Extremely fast regex, AST, and indentation parsing using deterministic rules (`lib/analyzers/`). Fully offline-capable.
-   - **Semantic AI (Edge API)**: Passes complex logic through Llama 3 on Groq (`/api/analyze`) with aggressive chunking to stay within free-tier rate limits.
-2. **Ephemeral Storage Architecture**:
-   - User code is **never** saved to a database. It is processed in memory on Vercel Edge functions and immediately discarded.
-   - History, preferences, and API keys are stored strictly in `localStorage` / `IndexedDB` on the user's device.
-3. **Progressive Web App (PWA)**:
-   - Registers a Service Worker (`sw.js`) to aggressively cache assets.
-   - Includes a native "Install App" button for desktop/mobile.
-4. **Virtualization**:
-   - Uses `@tanstack/react-virtual` to ensure 60fps scrolling even if an AI generation spits out thousands of issues.
+The application is designed around free-tier infrastructure, including Groq's API, with user data and scan history stored locally on the user's device.
+
+### Plain-English Explanations
+
+Every detected issue is explained without unnecessary technical jargon and, where useful, includes a real-world analogy to make the underlying concept easier to understand.
+
+### Automated Fixes
+
+Get corrected code directly from the interface, or generate a patched ZIP containing the suggested fixes.
+
+### Scan Comparison
+
+Compare previous scans to track improvements over time and monitor changes to your project's overall Health Score.
+
+### Built-in Learning Center
+
+Learn the fundamentals behind common security and code-quality issues through short, interactive lessons.
+
+### Offline Support
+
+Install Vibe-Coded Cleanup as a Progressive Web App (PWA) and run supported rule-based checks even when you are offline.
 
 ---
 
-## 📂 Project Structure
+## How It Works
 
-\`\`\`
+1. Open **[Vibe-Coded Cleanup](https://vibe-coded-cleanup.vercel.app)**.
+2. Drag and drop your project folder or upload a ZIP file.
+3. Let the analysis engine scan your codebase.
+4. Review detected issues and their explanations.
+5. Apply individual fixes or use **Fix All**.
+6. Download a patched version of your project.
+7. Compare future scans to track your progress.
+
+---
+
+## Architecture
+
+Vibe-Coded Cleanup is designed around three core principles:
+
+**Speed · Privacy · Simplicity**
+
+### Two-Layer Analysis Engine
+
+The analysis pipeline combines deterministic static analysis with AI-powered semantic analysis.
+
+#### 1. Rule-Based Analysis
+
+Runs locally and at the edge using deterministic rules located in `lib/analyzers/`.
+
+It uses techniques such as:
+
+* Regular-expression analysis
+* AST-based analysis
+* Indentation and structural parsing
+* Security-focused pattern detection
+
+These checks are extremely fast and can operate without an internet connection.
+
+#### 2. Semantic AI Analysis
+
+More complex issues are analyzed using Llama through the Groq API.
+
+The `/api/analyze` endpoint processes code in optimized chunks to handle larger projects while remaining compatible with free-tier API limitations.
+
+---
+
+## Privacy & Data Architecture
+
+Privacy is a core part of the architecture.
+
+### No Database for User Code
+
+Project source code is **not stored in a database**.
+
+Uploaded code is processed in memory by the application's server-side/edge processing layer and is discarded after processing.
+
+### Local-First Storage
+
+User-specific information such as:
+
+* Scan history
+* Preferences
+* API keys
+* Application state
+
+is stored locally using browser storage such as:
+
+* `localStorage`
+* `IndexedDB`
+
+This allows the application to maintain useful history without requiring a centralized database for user projects.
+
+---
+
+## Progressive Web App
+
+Vibe-Coded Cleanup is built as a Progressive Web App.
+
+The application includes:
+
+* Service Worker support
+* Aggressive asset caching
+* Offline support for supported rule-based scans
+* Native installation support for desktop and mobile
+* PWA manifest and application metadata
+
+Users can install the application directly from their browser and use it similarly to a native application.
+
+---
+
+## Performance
+
+Large scan results can contain thousands of detected issues.
+
+To maintain smooth rendering and scrolling, Vibe-Coded Cleanup uses `@tanstack/react-virtual` to virtualize large lists and minimize unnecessary DOM rendering.
+
+The result is a responsive interface even when processing large AI-generated outputs.
+
+---
+
+## Tech Stack
+
+| Category         | Technology                |
+| ---------------- | ------------------------- |
+| Framework        | Next.js 14 — App Router   |
+| Language         | TypeScript                |
+| Styling          | Tailwind CSS              |
+| Icons            | Lucide React              |
+| State Management | Zustand                   |
+| Code Editor      | Monaco Editor             |
+| AI               | Groq API                  |
+| AI Model         | Llama                     |
+| Virtualization   | `@tanstack/react-virtual` |
+| Unit Testing     | Vitest                    |
+| E2E Testing      | Playwright                |
+| Deployment       | Vercel                    |
+| Storage          | localStorage / IndexedDB  |
+| Application Type | Progressive Web App       |
+
+---
+
+## Project Structure
+
+```text
 vcc/
-├── app/                  # Next.js App Router (Pages, API routes, SEO)
-│   ├── api/              # Serverless API routes (Groq integration)
-│   ├── compare/          # Compare historical scans view
-│   ├── learn/            # Learning center view
-│   └── scan/             # Individual scan results view
-├── components/           # React Components
-│   ├── common/           # Shared UI (Header, Toasts, PWA updater)
-│   ├── results/          # Issue cards, virtualized lists, fix-all dialog
-│   ├── scanner/          # Drag & Drop zone, Monaco paste editor
-│   └── ui/               # Base design system (Buttons, inputs)
-├── lib/                  # Core Business Logic
-│   ├── analyzers/        # Rule definitions (Regex, Python, AST)
-│   ├── llm/              # Groq client wrapper and chunking logic
-│   └── reporters/        # Markdown & HTML export generators
-├── tests/                # Vitest unit tests & Playwright E2E tests
-└── public/               # Static assets, PWA manifest, SEO images
-\`\`\`
+├── app/                         # Next.js App Router
+│   ├── api/                     # Serverless API routes
+│   ├── compare/                 # Historical scan comparison
+│   ├── learn/                   # Learning center
+│   └── scan/                    # Scan results
+│
+├── components/                  # React components
+│   ├── common/                  # Shared UI components
+│   ├── results/                 # Issue cards and result views
+│   ├── scanner/                 # Upload and code scanning UI
+│   └── ui/                      # Base design system
+│
+├── lib/                         # Core application logic
+│   ├── analyzers/               # Static analysis rules
+│   ├── llm/                     # Groq client and AI processing
+│   └── reporters/               # Markdown and HTML exporters
+│
+├── tests/                       # Unit and E2E tests
+│
+└── public/                      # Static assets and PWA files
+```
 
 ---
 
-## 💻 Running Locally
+## Getting Started
 
-1. Clone the repository: \`git clone https://github.com/your-username/vibe-coded-cleanup.git\`
-2. Install dependencies: \`npm install\`
-3. (Optional) Set up your `.env.local` with \`GROQ_API_KEY=your_key\` to bypass the client-side key requirement.
-4. Run the development server: \`npm run dev\`
-5. Open [http://localhost:3000](http://localhost:3000)
+### Prerequisites
 
-## 🤝 Contributing
+* Node.js
+* npm
+* A Groq API key if you want to use your own API credentials
 
-See [CONTRIBUTING.md](./CONTRIBUTING.md) for guidelines on how to add new security rules, run tests, and improve the project.
+### Installation
 
-## 📄 License
+Clone the repository:
 
-MIT License.
+```bash
+git clone https://github.com/your-username/vibe-coded-cleanup.git
+cd vibe-coded-cleanup
+```
+
+Install dependencies:
+
+```bash
+npm install
+```
+
+### Environment Variables
+
+Create a `.env.local` file:
+
+```env
+GROQ_API_KEY=your_key
+```
+
+The API key is optional depending on how you configure the application.
+
+### Run the Development Server
+
+```bash
+npm run dev
+```
+
+Then open:
+
+```text
+http://localhost:3000
+```
+
+---
+
+## Testing
+
+Run unit tests with:
+
+```bash
+npm run test
+```
+
+Run end-to-end tests with:
+
+```bash
+npm run test:e2e
+```
+
+---
+
+## Contributing
+
+Contributions are welcome.
+
+You can help improve Vibe-Coded Cleanup by:
+
+* Adding new security rules
+* Improving existing analyzers
+* Adding language-specific checks
+* Improving AI analysis prompts
+* Improving the learning content
+* Adding test coverage
+* Improving performance
+* Fixing bugs
+
+Please read [`CONTRIBUTING.md`](./CONTRIBUTING.md) before submitting a contribution.
+
+---
+
+## License
+
+Vibe-Coded Cleanup is released under the **MIT License**.
+
+See [`LICENSE`](./LICENSE) for the full license text.
+
+---
+
+## Why Vibe-Coded Cleanup?
+
+AI has made software development dramatically more accessible.
+
+But **being able to generate code isn't the same as knowing whether that code is safe, efficient, or production-ready.**
+
+Vibe-Coded Cleanup bridges that gap by turning complex code-review concepts into actionable feedback that anyone can understand.
+
+**Build with AI. Review with confidence. Ship responsibly.**
