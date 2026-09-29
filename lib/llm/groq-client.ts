@@ -21,9 +21,13 @@ async function groqChat(apiKey: string, system: string, user: string, maxTokens:
   if (hit !== undefined) return { text: hit, rateLimited: false };
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
-      const res = await fetch(URL, { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-        body: JSON.stringify({ model: MODEL, temperature: 0.1, max_tokens: maxTokens, ...(json && { response_format: { type: "json_object" } }),
-          messages: [{ role: "system", content: system }, { role: "user", content: user }] }) });
+      const res = await fetch(URL, {
+        method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+        body: JSON.stringify({
+          model: MODEL, temperature: 0.1, max_tokens: maxTokens, ...(json && { response_format: { type: "json_object" } }),
+          messages: [{ role: "system", content: system }, { role: "user", content: user }]
+        })
+      });
       if (res.status === 429) {
         if (attempt === 2) return { text: null, rateLimited: true };
         await new Promise((r) => setTimeout(r, Math.min(Number(res.headers.get("retry-after")) || 1, 3) * 1000));
@@ -56,9 +60,11 @@ export async function groqReview(apiKey: string, file: string, content: string):
       const key = `${line}:${x.title}`;
       if (seen.has(key)) continue; // chunks overlap, so the same finding can appear twice
       seen.add(key);
-      issues.push({ id: `ai:${file}:${line}:${issues.length}`, severity: x.severity ?? "medium", category: x.category ?? "best-practice", file, line,
+      issues.push({
+        id: `ai:${file}:${line}:${issues.length}`, severity: x.severity ?? "medium", category: x.category ?? "best-practice", file, line,
         snippet: (lines[line - 1] ?? "").trim().slice(0, 160), title: x.title ?? "Possible issue", explanation: x.explanation ?? "",
-        analogy: x.analogy ?? "", fix: x.fix ?? "", confidence: x.confidence ?? "medium", source: "ai" });
+        analogy: x.analogy ?? "", fix: x.fix ?? "", confidence: x.confidence ?? "medium", source: "ai"
+      });
     }
   }
   return { issues, rateLimited };
