@@ -26,9 +26,9 @@ However, generated code can also introduce problems that are difficult to spot:
 
 ## Features
 
-### Browser-Based
+### Browser-Based & GitHub Integration
 
-No installation or complex setup is required. Upload your project directly from your browser and start scanning immediately.
+No installation or complex setup is required. You can drag and drop your project directly from your browser, or **scan any public GitHub repository instantly via URL**.
 
 ### Free to Use
 
@@ -42,9 +42,14 @@ Every detected issue is explained without unnecessary technical jargon and, wher
 
 Get corrected code directly from the interface, or generate a patched ZIP containing the suggested fixes.
 
-### Scan Comparison
+### Architecture & Complexity Visualizations
 
-Compare previous scans to track improvements over time and monitor changes to your project's overall Health Score.
+Vibe-Coded Cleanup automatically maps your project's architecture, rendering an interactive dependency graph (Mermaid), a security severity Heatmap, and an AST-complexity Treemap so you can see exactly where technical debt is accumulating.
+
+### Scan Comparison & Team Collaboration
+
+Compare previous scans to track improvements over time and monitor changes to your project's overall Health Score. 
+Share annotated views with your team using URL `#hash` links that require zero backend databases.
 
 ### Built-in Learning Center
 
@@ -59,11 +64,11 @@ Install Vibe-Coded Cleanup as a Progressive Web App (PWA) and run supported rule
 ## How It Works
 
 1. Open **[Vibe-Coded Cleanup](https://vibe-coded-cleanup.vercel.app)**.
-2. Drag and drop your project folder or upload a ZIP file.
+2. Drag and drop your project folder, upload a ZIP file, or provide a **GitHub URL**.
 3. Let the analysis engine scan your codebase.
-4. Review detected issues and their explanations.
+4. Review detected issues, architectural diagrams, and complexity treemaps.
 5. Apply individual fixes or use **Fix All**.
-6. Download a patched version of your project.
+6. Annotate and share the report with your team, or download a patched version of your project.
 7. Compare future scans to track your progress.
 
 ---
