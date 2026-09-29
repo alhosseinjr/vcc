@@ -56,6 +56,18 @@ Install Vibe-Coded Cleanup as a Progressive Web App (PWA) and run supported rule
 
 ---
 
+## 📸 Screenshots & Demo
+
+Watch the 60-second demo video: [Watch Demo](#)
+
+| | |
+|:---:|:---:|
+| ![Homepage & Drop Zone](https://placehold.co/600x400/png?text=Homepage) | ![Scan Progress](https://placehold.co/600x400/png?text=Scan+Progress) |
+| ![Results & Health Score](https://placehold.co/600x400/png?text=Results+Dashboard) | ![Plain English Issue Details](https://placehold.co/600x400/png?text=Issue+Explanation) |
+| ![Auto-Fix Diff Review](https://placehold.co/600x400/png?text=Auto-Fix+Diff) | ![Learning Center](https://placehold.co/600x400/png?text=Learning+Center) |
+
+---
+
 ## How It Works
 
 1. Open **[Vibe-Coded Cleanup](https://vibe-coded-cleanup.vercel.app)**.
@@ -162,7 +174,6 @@ The result is a responsive interface even when processing large AI-generated out
 | Styling          | Tailwind CSS              |
 | Icons            | Lucide React              |
 | State Management | Zustand                   |
-| Code Editor      | Monaco Editor             |
 | AI               | Groq API                  |
 | AI Model         | Llama                     |
 | Virtualization   | `@tanstack/react-virtual` |
