@@ -11,10 +11,21 @@ export default function SettingsPage() {
   const toast = useToast();
   const { theme, setTheme } = useTheme();
   const [key, setKey] = useState("");
+  const [ghKey, setGhKey] = useState("");
   const [prefs, setPrefs] = useState<Prefs>(DEFAULT_PREFS);
-  useEffect(() => { try { setKey(localStorage.getItem("vcc:groqKey") ?? ""); } catch { /* ignore */ } setPrefs(loadPrefs()); }, []);
+  useEffect(() => { 
+    try { setKey(localStorage.getItem("vcc:groqKey") ?? ""); } catch { /* ignore */ } 
+    try { setGhKey(localStorage.getItem("vcc:githubToken") ?? ""); } catch { /* ignore */ } 
+    setPrefs(loadPrefs()); 
+  }, []);
   const update = (p: Prefs) => { setPrefs(p); savePrefs(p); };
-  const saveKey = () => { try { localStorage.setItem("vcc:groqKey", key.trim()); toast("API key saved"); } catch { toast("Couldn't save (storage blocked)"); } };
+  const saveKey = () => { 
+    try { 
+      localStorage.setItem("vcc:groqKey", key.trim()); 
+      localStorage.setItem("vcc:githubToken", ghKey.trim()); 
+      toast("API keys saved"); 
+    } catch { toast("Couldn't save (storage blocked)"); } 
+  };
 
   return (
     <div className="max-w-lg space-y-8">
@@ -27,7 +38,10 @@ export default function SettingsPage() {
         <label htmlFor="k" className="block text-sm font-medium">Groq API key (optional, free at console.groq.com)</label>
         <input id="k" type="password" autoComplete="off" value={key} onChange={(e) => setKey(e.target.value)} className="w-full rounded-xl border border-border bg-bg p-2" placeholder="gsk_..." />
         <p className="text-xs text-muted">Stored only in this browser. Sent only with your request so Groq can review your code.</p>
-        <Button onClick={saveKey}>Save key</Button>
+        <label htmlFor="gh" className="block mt-4 text-sm font-medium">GitHub Token (optional, for private repos & rate limits)</label>
+        <input id="gh" type="password" autoComplete="off" value={ghKey} onChange={(e) => setGhKey(e.target.value)} className="w-full rounded-xl border border-border bg-bg p-2" placeholder="ghp_..." />
+        <p className="text-xs text-muted">Stored only in this browser. Sent only to api.github.com to fetch repositories.</p>
+        <Button onClick={saveKey}>Save keys</Button>
       </section>
       <section className="space-y-3">
         <h2 className="text-sm font-medium">Scan preferences</h2>

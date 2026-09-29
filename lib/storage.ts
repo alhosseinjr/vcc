@@ -1,5 +1,5 @@
 import type { Issue } from "./types";
-export interface SavedScan { id: string; at: number; fileCount: number; score: number; issues: Issue[]; aiUsed?: boolean; aiNote?: string; projectType?: string; skippedFileCount?: number; skippedFileNames?: string[] }
+export interface SavedScan { id: string; at: number; fileCount: number; score: number; issues: Issue[]; aiUsed?: boolean; aiNote?: string; projectType?: string; skippedFileCount?: number; skippedFileNames?: string[]; githubUrl?: string }
 const KEY = "vcc:history";
 
 export function loadHistory(): SavedScan[] {
@@ -25,6 +25,14 @@ export function saveScan(s: SavedScan): void {
   }
 }
 export function clearAll(): void { try { localStorage.clear(); } catch { /* ignore */ } }
+export function deleteScan(id: string): void {
+  try {
+    const history = loadHistory();
+    const updated = history.filter((s) => s.id !== id);
+    localStorage.setItem(KEY, JSON.stringify(updated));
+    sessionStorage.removeItem(`vcc:files:${id}`);
+  } catch { /* ignore */ }
+}
 
 export interface Marks { fixed: string[]; ignored: string[] }
 const MARKS = "vcc:marks";

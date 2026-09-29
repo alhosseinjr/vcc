@@ -1,0 +1,35 @@
+
+Running 1 test using 1 worker
+
+URL: http://localhost:3000/scan/0a91118f-22aa-476f-b52a-49c40a166d8b
+Storage: null
+  ✘  1 tests/e2e/scan.spec.ts:19:5 › scan shows issues, a score, and auto-fixes (6.1s)
+
+
+  1) tests/e2e/scan.spec.ts:19:5 › scan shows issues, a score, and auto-fixes ──────────────────────
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByText('Secret written directly in code')
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" getByText('Secret written directly in code') with timeout 5000ms
+      - waiting for getByText('Secret written directly in code')
+
+
+      20 |   await scanSample(page);
+      21 |   try {
+    > 22 |     await expect(page.getByText("Secret written directly in code")).toBeVisible();
+         |                                                                     ^
+      23 |   } catch (e) {
+      24 |     console.error("URL:", page.url());
+      25 |     console.error("Storage:", await page.evaluate(() => localStorage.getItem("vcc:history")));
+        at /Users/admin/Downloads/vcc/tests/e2e/scan.spec.ts:22:69
+
+    Error Context: test-results/scan-scan-shows-issues-a-score-and-auto-fixes/error-context.md
+
+  1 failed
+    tests/e2e/scan.spec.ts:19:5 › scan shows issues, a score, and auto-fixes ───────────────────────

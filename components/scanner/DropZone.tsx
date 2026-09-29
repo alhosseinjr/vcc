@@ -65,22 +65,6 @@ export function DropZone({ onScan, busy }: { onScan: () => void; busy: boolean }
           onChange={(e) => e.target.files && void ingest(e.target.files)} />
       </div>
       {error && <p role="alert" className="mt-4 rounded-xl border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-500 animate-in fade-in zoom-in-95">⚠️ {error}</p>}
-      {files.length > 0 && (
-        <div className="mt-4">
-          <ul className="divide-y divide-border rounded-xl border border-border">
-            {files.map((f) => (
-              <li key={f.name} className="flex items-center justify-between px-3 py-2 text-sm">
-                <span>{f.name} <span className="text-muted">· {f.language} · {formatBytes(f.size)}</span></span>
-                <button aria-label={`Remove ${f.name}`} onClick={() => removeFile(f.name)} className="rounded p-1 hover:bg-card"><X size={16} aria-hidden /></button>
-              </li>
-            ))}
-          </ul>
-          <div className="mt-3 flex gap-2">
-            <Button onClick={onScan} disabled={busy}>{busy ? "Scanning…" : `Scan ${files.length} file${files.length > 1 ? "s" : ""}`}</Button>
-            <Button variant="outline" onClick={clear}>Clear</Button>
-          </div>
-        </div>
-      )}
     </section>
   );
 }

@@ -80,9 +80,13 @@ export function ResultsView({ scan, files }: { scan: SavedScan; files: { name: s
         <div className="ml-auto flex flex-wrap gap-2">
           <Button onClick={() => setReviewing(true)} disabled={patchable.length === 0} title={files ? "" : "Original files are only kept for the current browser session"}>Fix all ({patchable.length} auto-fixable)</Button>
           <ShareButton issues={open} score={score} />
+          {files && files.length >= 10 && (
+            <Button variant="outline" onClick={() => window.location.href = `/architecture/${scan.id}`}>Architecture</Button>
+          )}
           <Button variant="outline" onClick={exportMd}>.md</Button>
           <Button variant="outline" onClick={() => download("report.html", toHtml(open, score), "text/html")}>.html</Button>
           <Button variant="outline" onClick={() => download("report.json", JSON.stringify({ score, issues: open }, null, 2), "application/json")}>.json</Button>
+          <Button variant="ghost" onClick={() => { import("@/lib/storage").then(({ deleteScan }) => { deleteScan(scan.id); window.location.href = "/"; }); }} title="Delete scan" className="text-red-500 hover:bg-red-500/10">Delete</Button>
         </div>
       </div>
       {scan.projectType && <p className="text-sm text-muted">Detected: {scan.projectType}, with extra checks for that kind of project.</p>}
