@@ -86,6 +86,9 @@ export function ResultsView({ scan, files }: { scan: SavedScan; files: { name: s
         </div>
       </div>
       {scan.projectType && <p className="text-sm text-muted">Detected: {scan.projectType}, with extra checks for that kind of project.</p>}
+      {scan.skippedFileCount && scan.skippedFileCount > 0 && (
+        <p className="text-sm text-muted">📦 {scan.skippedFileCount} generated/minified file{scan.skippedFileCount > 1 ? "s" : ""} skipped{scan.skippedFileNames && scan.skippedFileNames.length > 0 ? ` (${scan.skippedFileNames.slice(0, 3).join(", ")}${scan.skippedFileNames.length > 3 ? "…" : ""})` : ""}.</p>
+      )}
       {reviewing && <FixAllDialog issues={patchable} onClose={() => setReviewing(false)} onApply={(ids) => { setReviewing(false); void downloadPatched(ids); }} />}
       {scan.aiNote ? <p className="text-sm text-muted">{scan.aiNote}</p> : !scan.aiUsed && <p className="text-sm text-muted">Rule-based scan only. Add a free Groq key in Settings for deeper AI review.</p>}
       <div className="flex flex-wrap items-center gap-4 text-sm">

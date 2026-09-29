@@ -9,7 +9,7 @@ import { useToast } from "../common/ToastProvider";
 
 export type Status = "open" | "fixed" | "ignored";
 
-export function IssueCard({ issue, status, onMark, context }: { issue: Issue; status: Status; onMark: (s: Status) => void; context?: string }) {
+export function IssueCard({ issue, status, onMark, context }: { issue: Issue & { instanceCount?: number; instanceLines?: number[] }; status: Status; onMark: (s: Status) => void; context?: string }) {
   const [copied, setCopied] = useState(false);
   const toast = useToast();
   const [aiFix, setAiFix] = useState<string | null>(null);
@@ -33,6 +33,7 @@ export function IssueCard({ issue, status, onMark, context }: { issue: Issue; st
     <details className={`rounded-xl border border-border bg-card p-4 ${status === "fixed" ? "opacity-60" : ""}`}>
       <summary className="cursor-pointer font-medium">
         {status === "fixed" ? "✅" : SEVERITY_ICON[issue.severity]} {issue.title}
+        {(issue.instanceCount ?? 1) > 1 && <span className="ml-1.5 inline-flex items-center rounded-full bg-accent/15 px-2 py-0.5 text-xs font-medium text-accent">×{issue.instanceCount}</span>}
         <span className="ml-2 text-xs text-muted">{issue.file}:{issue.line} · {issue.category} · {issue.source === "ai" ? "AI" : "rules"} · {issue.confidence} confidence</span>
       </summary>
       <div className="mt-3 space-y-3 text-sm">

@@ -5,6 +5,7 @@ import { pythonAnalyze } from "@/lib/analyzers/python-analyzer";
 import { projectAnalyze } from "@/lib/analyzers/project-analyzer";
 import { regexAnalyze } from "@/lib/analyzers/regex-analyzer";
 import { groqReview } from "@/lib/llm/groq-client";
+import { groupIssues } from "@/lib/group-issues";
 import type { Issue } from "@/lib/types";
 
 export const maxDuration = 30;
@@ -19,13 +20,17 @@ export async function POST(req: Request) {
 
   const key = req.headers.get("x-groq-key") || process.env.GROQ_API_KEY || ""; // never logged
   const files = body.files.slice(0, 50);
-  const issues: Issue[] = files.flatMap((f) => f.name.endsWith("package.json") ? dependencyAnalyze(f.name, f.content) : [...regexAnalyze(f.name, f.content), ...astAnalyze(f.name, f.content), ...pythonAnalyze(f.name, f.content)]);
   const project = projectAnalyze(files);
+
+  // Skip generated/minified files from rule-based analysis
+  const scannable = files.filter((f) => !project.skippedFiles.includes(f.name));
+
+  const issues: Issue[] = scannable.flatMap((f) => f.name.endsWith("package.json") ? dependencyAnalyze(f.name, f.content) : [...regexAnalyze(f.name, f.content), ...astAnalyze(f.name, f.content), ...pythonAnalyze(f.name, f.content)]);
   issues.push(...project.issues);
 
   let aiNote: string | undefined;
   if (key) {
-    const candidates = files.filter((f) => !f.name.endsWith("package.json"));
+    const candidates = scannable.filter((f) => !f.name.endsWith("package.json"));
     const targets = candidates.slice(0, AI_FILE_CAP);
     let limited = false;
     for (let i = 0; i < targets.length; i += 4) { // 4 files at a time
@@ -36,5 +41,16 @@ export async function POST(req: Request) {
     if (limited) aiNote = "The free AI service was busy, so AI review is partial. Rule-based results are complete. Try again in a minute.";
     else if (candidates.length > AI_FILE_CAP) aiNote = `AI review covered the first ${AI_FILE_CAP} of ${candidates.length} files. Rule-based checks covered all of them.`;
   }
-  return NextResponse.json({ issues, aiUsed: Boolean(key), aiNote, projectType: project.type.label });
+
+  // Group duplicate issues (same rule + same file = one card with ×N)
+  const grouped = groupIssues(issues);
+
+  return NextResponse.json({
+    issues: grouped,
+    aiUsed: Boolean(key),
+    aiNote,
+    projectType: project.type.label,
+    skippedFileCount: project.skippedFiles.length,
+    skippedFileNames: project.skippedFiles,
+  });
 }

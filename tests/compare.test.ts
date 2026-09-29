@@ -9,6 +9,6 @@ describe("compareScans", () => {
     expect(r.resolved.map((i) => i.title)).toEqual(["B"]);
     expect(r.added.map((i) => i.title)).toEqual(["C"]);
     expect(r.unchanged.map((i) => i.title)).toEqual(["A"]);
-    expect(r.scoreBefore).toBe(80);
+    expect(r.scoreBefore).toBe(76); // 2 high × 12 = 24 → 100 - 24 = 76
   });
 });

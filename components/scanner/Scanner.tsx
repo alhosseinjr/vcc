@@ -30,10 +30,10 @@ export function Scanner() {
       if (chosen.length === 0) throw new Error("None of your files match the languages enabled in Settings.");
       const payload = chosen.map(({ name, content }) => ({ name, content }));
       const res = await fetch("/api/analyze", { method: "POST", signal: ctrl.signal, headers: { "Content-Type": "application/json", ...(key && { "x-groq-key": key }) }, body: JSON.stringify({ files: payload }) });
-      const data = (await res.json()) as { issues?: Issue[]; aiUsed?: boolean; aiNote?: string; projectType?: string; error?: string };
+      const data = (await res.json()) as { issues?: Issue[]; aiUsed?: boolean; aiNote?: string; projectType?: string; skippedFileCount?: number; skippedFileNames?: string[]; error?: string };
       if (!res.ok || !data.issues) throw new Error(data.error ?? "Scan failed.");
       const id = crypto.randomUUID();
-      saveScan({ id, at: Date.now(), fileCount: chosen.length, score: healthScore(data.issues), issues: data.issues, aiUsed: Boolean(data.aiUsed), aiNote: data.aiNote, projectType: data.projectType });
+      saveScan({ id, at: Date.now(), fileCount: chosen.length, score: healthScore(data.issues), issues: data.issues, aiUsed: Boolean(data.aiUsed), aiNote: data.aiNote, projectType: data.projectType, skippedFileCount: data.skippedFileCount, skippedFileNames: data.skippedFileNames });
       saveScanFiles(id, payload);
       router.push(`/scan/${id}`);
     } catch (e: any) {

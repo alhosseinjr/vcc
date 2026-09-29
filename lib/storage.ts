@@ -1,5 +1,5 @@
 import type { Issue } from "./types";
-export interface SavedScan { id: string; at: number; fileCount: number; score: number; issues: Issue[]; aiUsed?: boolean; aiNote?: string; projectType?: string }
+export interface SavedScan { id: string; at: number; fileCount: number; score: number; issues: Issue[]; aiUsed?: boolean; aiNote?: string; projectType?: string; skippedFileCount?: number; skippedFileNames?: string[] }
 const KEY = "vcc:history";
 
 export function loadHistory(): SavedScan[] {
