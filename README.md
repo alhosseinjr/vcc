@@ -8,7 +8,7 @@ Instead of overwhelming you with technical jargon, it explains each issue in pla
 
 ## Overview
 
-Vibe-Coded Cleanup is a fast, offline-capable code review tool focusing heavily on privacy and accessibility for non-technical users. It employs an excellent client-side architecture (PWA, virtualized lists, edge/client static analysis) and seamlessly layers on AI when deeper semantic understanding is needed.
+Vibe-Coded Cleanup is a fast code review tool for non-technical users. The interface is a Progressive Web App with virtualized result lists. Analysis runs in a server function: deterministic rule-based checks always run, and an optional AI review (Groq) is added when the host has configured a key. Your files are sent to that server function on every scan; see [What leaves your machine](#what-leaves-your-machine).
 
 ![Demo of scanning code](./public/vcc_demo.webp)
 
@@ -61,7 +61,7 @@ Learn the fundamentals behind common security and code-quality issues through sh
 
 ### Offline Support
 
-Install Vibe-Coded Cleanup as a Progressive Web App (PWA) and run supported rule-based checks even when you are offline.
+Install Vibe-Coded Cleanup as a Progressive Web App (PWA). Cached pages (home, learning center, settings, help, and pages you have already opened) load offline. **Scanning needs a network connection**, because the checks run in the `/api/analyze` server function, not in the browser.
 
 ---
 
@@ -89,7 +89,7 @@ The analysis pipeline combines deterministic static analysis with AI-powered sem
 
 #### 1. Rule-Based Analysis
 
-Runs locally and at the edge using deterministic rules located in `lib/analyzers/`.
+Runs inside the `/api/analyze` server function using deterministic rules located in `lib/analyzers/`. No AI and no third-party service is involved in this layer.
 
 It uses techniques such as:
 
@@ -98,13 +98,15 @@ It uses techniques such as:
 * Indentation and structural parsing
 * Security-focused pattern detection
 
-These checks are extremely fast and can operate without an internet connection.
+These checks are fast (see [Performance](#performance)), but they need a connection to the app's server.
 
 #### 2. Semantic AI Analysis
 
-More complex issues are analyzed using Llama through the Groq API.
+More complex issues are analyzed with `openai/gpt-oss-120b` through the Groq API.
 
-The `/api/analyze` endpoint processes code in optimized chunks to handle larger projects while remaining compatible with free-tier API limitations.
+This layer runs **only when the server has `GROQ_API_KEY` set**. A key saved in the browser's Settings page is not used by scans (see [Environment Variables](#environment-variables)). To stay inside free-tier limits and the 20-second function limit, a scan sends at most **6 files** to the model, 2 at a time, preferring paths that look security-relevant (`auth`, `login`, `middleware`, `route`, `api`, `db`, `config`, `env`, `secret`, `jwt`, `token`, `session`). Each file is split into 300-line windows, and at most 3 windows per file are reviewed. Rule-based checks cover every submitted file.
+
+Per request, the server accepts up to **20 files**, **1 MB per file** and **10 MB in total**.
 
 ---
 
@@ -116,32 +118,53 @@ Privacy is a core part of the architecture.
 
 Project source code is **not stored in a database**.
 
-Uploaded code is processed in memory by the application's server-side/edge processing layer and is discarded after processing.
+Uploaded code is processed in memory by the `/api/analyze` server function and is discarded after the response. The server's structured logs record request IDs, durations and counts, never file contents, and the logger is a no-op in production builds.
 
 ### Local-First Storage
 
-User-specific information such as:
+Everything the app remembers stays in your browser. There is no account and no server-side profile.
 
-* Scan history
-* Preferences
-* API keys
-* Application state
+| What | Where |
+| --- | --- |
+| Scan history (issues and scores; last 25 scans, kept 30 days), marks, annotations, preferences, Learning Center progress | `localStorage` |
+| Your Groq API key and optional GitHub token | `localStorage`, in plain text (readable by any script on the same origin) |
+| The first 1,000 characters of up to 25 files from the current scan | `sessionStorage`, cleared when the tab closes |
 
-is stored locally using browser storage such as:
+The app does not use IndexedDB. Clearing site data removes all of the above.
 
-* `localStorage`
-* `IndexedDB`
+## What leaves your machine
 
-This allows the application to maintain useful history without requiring a centralized database for user projects.
+Short version: **your code is sent to this app's server on every scan, and on to Groq only when the server has an AI key.** Every path:
 
-### What Leaves Your Machine?
+| When | Sent to | What is sent |
+| --- | --- | --- |
+| You scan a **GitHub URL** | `api.github.com` and `raw.githubusercontent.com`, directly from your browser | The repo, branch and file paths. A GitHub token, if you saved one, goes in the `Authorization` header to GitHub only. |
+| **Any scan** (upload, GitHub or pasted code) | This app's `/api/analyze` | Each selected file as `{ name, content }`, i.e. **the full text of your source files** (up to 20 files, 1 MB each). The browser also attaches your saved Groq key as an `x-groq-key` header, which the scan route ignores. |
+| **AI review** is on (server has `GROQ_API_KEY`) | `api.groq.com`, from the server | Up to 6 files as 300-line windows (max 3 per file), with the file name. Rule-based checks never leave the server process. |
+| You click **Generate AI fix** | This app's `/api/fix`, then `api.groq.com` | The issue title, explanation, file name and line, and up to 10,000 characters of surrounding code. Uses the server's key; your saved key is used only if the host set `ALLOW_USER_GROQ_KEY=true` and has no server key. |
+| You open the app or the PWA | This app's own origin | Normal page and asset requests. The code contains no analytics or tracking scripts. |
 
-Vibe-Coded Cleanup is built with privacy in mind. Here is exactly what data is transferred or saved:
+Things worth knowing:
 
-* **Source Code**: If using rule-based local scanning, your code **never leaves your browser**. If using the AI analysis, the selected code snippets are sent directly to the Groq API (api.groq.com).
-* **GitHub Repositories**: When providing a GitHub URL, file contents are fetched directly from GitHub's servers (`api.github.com` and `raw.githubusercontent.com`).
-* **Local Storage**: Your scan history, preferences, and API keys are stored in your browser's local storage and IndexedDB.
-* **Output Artifacts**: You can explicitly download HTML, JSON, and Markdown reports, or a ZIP file of the automatically patched source files. These are generated locally.
+* **AI review has no per-scan opt-in.** If the host sets `GROQ_API_KEY`, up to 6 files are sent to Groq on every scan, and the results page says whether AI was used. To keep code away from Groq, self-host without `GROQ_API_KEY`.
+* **The server caches Groq replies in memory** (prompt hash to reply, about 200 entries, per instance, lost on restart). A reply can quote lines of your code.
+* **Treat any saved key as sensitive.** It sits in `localStorage` in plain text.
+
+### Files the tool produces
+
+These are created in your browser and saved to your Downloads folder. The app does not upload them.
+
+| Artifact | Created by | Contains | Does **not** contain |
+| --- | --- | --- | --- |
+| `report.md`, `report.html` | **.md / .html** buttons on a scan | Health score; per issue: title, `file:line`, category, explanation, analogy, suggested fix text | Source snippets (fix text can still include code from a rule or the AI) |
+| `report.json` | **.json** button | Health score and the full issue objects, **including the `snippet` field (the offending source line, up to 160 characters)** for auto-fixable issues the `original` and `patched` lines, and for AI-found issues `ruleId` and `evidence` (the model's description of the offending behavior, which can quote code) | Whole files |
+| `comparison.md`, `comparison.html` | Compare page | Same format as the Markdown/HTML reports, for the combined issues of two scans | Source snippets |
+| `patched-files.zip` | **Fix all** | The files that received an auto-fix, with the chosen one-line replacements applied. Note: it is built from the 1,000-character copy held in session storage, so large files can come out truncated. | Files that were not changed |
+| `annotations-<scanId>.md` | **Export Notes** (architecture page) | Your notes, author names and timestamps, grouped by file or node | Source code |
+| Share link `/shared#...` | **Share** button | Up to 50 issues (severity, category, file, line, title, explanation, analogy, fix), with an optional expiry of 7 days, 30 days or never | Source snippets (deliberately left out) |
+| Share link `/share#...` | **Share View** (architecture page) | View mode, the GitHub URL (if the scan came from one), your annotations, and with *Include Issues* the file, title and severity of each issue | Source code |
+
+About share links: the report lives **in the URL hash**, which browsers do not send to servers, so there is no backend copy to delete. The flip side is that anyone with the link has the report, and the expiry is only enforced by the viewer's browser. File paths and issue titles can still reveal things about your project.
 
 ---
 
@@ -171,13 +194,28 @@ The result is a responsive interface even when processing large AI-generated out
 
 ### Analysis Benchmark
 
-The local rule-based analysis is exceptionally fast. Running over a **147 KB (~7000 lines)** code payload on a standard machine yields:
+The rule-based analysis is very fast. Running over a **147 KB (~7000 lines)** code payload on a standard machine yields:
 
 | Analyzer             | Execution Time |
 |----------------------|----------------|
 | **Regex Analyzer**   | ~7.10 ms       |
 | **AST Analyzer**     | ~35.97 ms      |
 | **Dependency Checks**| ~0.14 ms       |
+
+#### Reproduce it
+
+`npm run bench` runs the regex, Python and dependency analyzers plus project detection and issue grouping (the same pipeline as `/api/analyze`, without the AST pass or any AI call) over this repository's own source. It needs Node 22.6+ and no extra install.
+
+| Scan | Files | Size | Lines | Median | p95 | Throughput |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 20 files (per-request cap in `/api/analyze`) | 20 | 78 KB | 1,819 | 3.8 ms | 4.0 ms | 20.4 MB/s |
+| All 87 files | 87 | 234 KB | 4,975 | 11.5 ms | 11.9 ms | 20.3 MB/s |
+| Corpus ×5 | 435 | 1.2 MB | 24,875 | 56.1 ms | 65.3 ms | 20.9 MB/s |
+| Corpus ×20 | 1,740 | 4.7 MB | 99,500 | 234.6 ms | 254.3 ms | 20.0 MB/s |
+
+*Node 22.22 on a 2-vCPU cloud VM (Intel Xeon @ 2.1 GHz), median of 5–25 runs after warm-up. A second run gave 4.1 / 12.4 / 62.3 / 236.1 ms, so expect roughly ±10% on larger inputs and more on small ones. A modern laptop will be faster.*
+
+Cost grows linearly with input (about 50 µs per KB here). In a real scan, wall-clock time is dominated by uploading the files and, when enabled, the AI review, not by the rule engine.
 
 ---
 
@@ -191,12 +229,12 @@ The local rule-based analysis is exceptionally fast. Running over a **147 KB (~7
 | Icons            | Lucide React              |
 | State Management | Zustand                   |
 | AI               | Groq API                  |
-| AI Model         | Llama                     |
+| AI Model         | `openai/gpt-oss-120b` (via Groq) |
 | Virtualization   | `@tanstack/react-virtual` |
 | Unit Testing     | Vitest                    |
 | E2E Testing      | Playwright                |
 | Deployment       | Vercel                    |
-| Storage          | localStorage / IndexedDB  |
+| Storage          | localStorage / sessionStorage |
 | Application Type | Progressive Web App       |
 
 ---
@@ -235,15 +273,15 @@ vcc/
 
 * Node.js
 * npm
-* A Groq API key if you want to use your own API credentials
+* A Groq API key if you want the optional AI review (set on the server, see below)
 
 ### Installation
 
 Clone the repository:
 
 ```bash
-git clone https://github.com/your-username/vibe-coded-cleanup.git
-cd vibe-coded-cleanup
+git clone https://github.com/alhosseinjr/vcc.git
+cd vcc
 ```
 
 Install dependencies:
@@ -258,9 +296,13 @@ Create a `.env.local` file:
 
 ```env
 GROQ_API_KEY=your_key
+ALLOW_USER_GROQ_KEY=false
 ```
 
-The API key is optional depending on how you configure the application.
+Both are server-only (never prefix them with `NEXT_PUBLIC_`).
+
+* `GROQ_API_KEY` enables the AI review in `/api/analyze` and AI fixes in `/api/fix`. **Without it, only the rule-based layer runs and no code is sent to Groq.**
+* `ALLOW_USER_GROQ_KEY=true` additionally lets `/api/fix` accept a key from the browser's Settings page (only when the server has no key of its own). `/api/analyze` never uses a browser-supplied key.
 
 ### Run the Development Server
 
@@ -288,6 +330,12 @@ Run end-to-end tests with:
 
 ```bash
 npm run test:e2e
+```
+
+Run the rule-engine benchmark (Node 22.6+):
+
+```bash
+npm run bench
 ```
 
 ---
