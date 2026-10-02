@@ -332,10 +332,29 @@ Before returning the code, verify that:
 Return ONLY the corrected replacement code.
 `;
 
+import { z } from "zod";
+
+const IssueSchema = z.object({
+  line: z.number().int().min(1),
+  severity: z.enum(["critical", "high", "medium", "low"]),
+  category: z.enum(["security", "performance", "best-practice"]),
+  ruleId: z.string().min(1),
+  title: z.string().min(1),
+  explanation: z.string().min(1),
+  analogy: z.string().min(1),
+  evidence: z.string().min(1),
+  fix: z.string().min(1),
+  confidence: z.enum(["high", "medium", "low"]),
+});
+
+const ReviewResponseSchema = z.object({
+  issues: z.array(IssueSchema).optional().default([]),
+});
+
 interface ChatResult { text: string | null; rateLimited: boolean }
 const cache = new Map<string, string>();
 
-/** One Groq call with response caching and 429 retry. Never throws. */
+/** One Groq call with response caching, 429 retry, and timeout. Never throws. */
 async function groqChat(apiKey: string, system: string, user: string, maxTokens: number, json: boolean): Promise<ChatResult> {
   const ck = createHash("sha256").update(system + user).digest("hex");
   const hit = cache.get(ck);
@@ -343,8 +362,12 @@ async function groqChat(apiKey: string, system: string, user: string, maxTokens:
 
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 12000); // 12s timeout
+
       const res = await fetch(URL, {
         method: "POST",
+        signal: controller.signal,
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${apiKey}`,
@@ -361,16 +384,18 @@ async function groqChat(apiKey: string, system: string, user: string, maxTokens:
         }),
       });
 
+      clearTimeout(timeoutId);
+
       if (res.status === 429) {
         if (attempt === 2) return { text: null, rateLimited: true };
         const retryAfter = Number(res.headers.get("retry-after")) || 2;
-        await new Promise((r) => setTimeout(r, Math.min(retryAfter, 8) * 1000));
+        await new Promise((r) => setTimeout(r, Math.min(retryAfter, 5) * 1000));
         continue;
       }
 
       if (!res.ok) {
         if (res.status >= 500 && attempt < 2) {
-          await new Promise((r) => setTimeout(r, 2000));
+          await new Promise((r) => setTimeout(r, Math.pow(2, attempt) * 1000));
           continue;
         }
         return { text: null, rateLimited: false };
@@ -389,7 +414,7 @@ async function groqChat(apiKey: string, system: string, user: string, maxTokens:
       return { text, rateLimited: false };
     } catch {
       if (attempt < 2) {
-        await new Promise((r) => setTimeout(r, 2000));
+        await new Promise((r) => setTimeout(r, Math.pow(2, attempt) * 1000));
         continue;
       }
       return { text: null, rateLimited: false };
@@ -398,6 +423,7 @@ async function groqChat(apiKey: string, system: string, user: string, maxTokens:
 
   return { text: null, rateLimited: true };
 }
+
 
 /** Deep review of one file, chunked. Rule-based results still show if this returns nothing. */
 export async function groqReview(
@@ -429,73 +455,44 @@ export async function groqReview(
       break;
     }
 
-    let parsed: { issues?: unknown[] } = {};
-
+    let parsed;
     try {
       const cleanJson = (r.text ?? "{}")
         .replace(/^```json\s*/i, "")
         .replace(/```\s*$/i, "")
         .trim();
-
-      parsed = JSON.parse(cleanJson) as { issues?: unknown[] };
+      const rawJson = JSON.parse(cleanJson);
+      const validation = ReviewResponseSchema.safeParse(rawJson);
+      if (!validation.success) continue;
+      parsed = validation.data;
     } catch {
       continue;
     }
 
-    for (const raw of parsed.issues ?? []) {
-      if (!raw || typeof raw !== "object") continue;
+    for (const x of parsed.issues) {
+      const line = x.line;
+      if (line < 1 || line > lines.length) continue;
 
-      const x = raw as Record<string, unknown>;
-      const line = Number(x.line);
-
-      if (!Number.isInteger(line) || line < 1 || line > lines.length) {
-        continue;
-      }
-
-      const severity = x.severity;
-      const category = x.category;
-      const confidence = x.confidence;
-      const ruleId = typeof x.ruleId === "string" ? x.ruleId.trim() : "";
-      const title = typeof x.title === "string" ? x.title.trim() : "";
-      const explanation = typeof x.explanation === "string" ? x.explanation.trim() : "";
-      const analogy = typeof x.analogy === "string" ? x.analogy.trim() : "";
-      const evidence = typeof x.evidence === "string" ? x.evidence.trim() : "";
-      const fix = typeof x.fix === "string" ? x.fix.trim() : "";
-
-      if (
-        !["critical", "high", "medium", "low"].includes(String(severity)) ||
-        !["security", "performance", "best-practice"].includes(String(category)) ||
-        !["high", "medium", "low"].includes(String(confidence)) ||
-        !ruleId ||
-        !title ||
-        !explanation ||
-        !analogy ||
-        !evidence
-      ) {
-        continue;
-      }
-
-      const key = `${file}:${ruleId}:${line}`;
-
+      const key = `${file}:${x.ruleId}:${line}`;
       if (seen.has(key)) continue;
       seen.add(key);
 
       issues.push({
         id: `ai:${file}:${line}:${issues.length}`,
-        severity: severity as Issue["severity"],
-        category: category as Issue["category"],
+        severity: x.severity,
+        category: x.category,
         file,
         line,
         snippet: (lines[line - 1] ?? "").trim().slice(0, 160),
-        title,
-        explanation,
-        analogy,
-        fix,
-        confidence: confidence as Issue["confidence"],
+        title: x.title,
+        explanation: x.explanation,
+        analogy: x.analogy,
+        fix: x.fix,
+        confidence: x.confidence,
         source: "ai",
-        ruleId,
-        evidence,
-      } as Issue);
+        ruleId: x.ruleId,
+        evidence: x.evidence,
+      });
     }
   }
 

@@ -3,7 +3,7 @@ export type Category = "security" | "performance" | "best-practice" | "style" | 
 export interface Issue {
   id: string; severity: Severity; category: Category; file: string; line: number; snippet: string;
   title: string; explanation: string; analogy: string; fix: string;
-  confidence: "high" | "medium" | "low"; source: "rules" | "ai";
+  confidence: "high" | "medium" | "low"; source: "rules" | "ai"; ruleId?: string; evidence?: string;
   /** Set when a safe one-line replacement exists: original line and its fixed version. */
   original?: string; patched?: string;
 }
