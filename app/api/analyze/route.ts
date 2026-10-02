@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { astAnalyze } from "@/lib/analyzers/ast-analyzer";
 import { dependencyAnalyze } from "@/lib/analyzers/dependency-analyzer";
 import { pythonAnalyze } from "@/lib/analyzers/python-analyzer";
@@ -8,41 +9,93 @@ import { groqReview } from "@/lib/llm/groq-client";
 import { groupIssues } from "@/lib/group-issues";
 import type { Issue } from "@/lib/types";
 
-export const maxDuration = 30;
-const AI_FILE_CAP = 8; // keeps a scan inside the time limit and the free Groq quota
-interface Body { files: { name: string; content: string }[] }
+export const maxDuration = 20;
+
+const MAX_FILES = 25;
+const MAX_FILE_BYTES = 1_048_576; // 1MB per file
+const MAX_TOTAL_BYTES = 15 * 1024 * 1024; // 15MB total
+const MAX_PATH_LENGTH = 240;
+
+const fileSchema = z.object({
+  name: z.string().trim().min(1).max(MAX_PATH_LENGTH),
+  content: z.string().max(MAX_FILE_BYTES),
+});
+
+const bodySchema = z.object({
+  files: z.array(fileSchema).min(1).max(MAX_FILES),
+});
+
+const safeName = (name: string) => {
+  if (name.length > MAX_PATH_LENGTH) return false;
+  if (name.includes("..") || name.startsWith("/") || name.startsWith("\\")) return false;
+  const parts = name.split(/[\\/]+/).filter(Boolean);
+  if (!parts.length) return false;
+  return !parts.some((part) => part === "" || part === "." || part === "..");
+};
 
 export async function POST(req: Request) {
-  let body: Body;
-  try { body = (await req.json()) as Body; } catch { return NextResponse.json({ error: "Invalid request." }, { status: 400 }); }
-  if (!Array.isArray(body.files) || body.files.length === 0 || body.files.length > 100)
-    return NextResponse.json({ error: "Send between 1 and 100 files." }, { status: 400 });
+  let raw: unknown;
+  try {
+    raw = await req.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON body." }, { status: 400 });
+  }
 
-  const key = req.headers.get("x-groq-key") || process.env.GROQ_API_KEY || ""; // never logged
-  const files = body.files.slice(0, 50);
+  const parsed = bodySchema.safeParse(raw);
+  if (!parsed.success) {
+    return NextResponse.json({ error: "Invalid input. Too many files or oversized payload." }, { status: 400 });
+  }
+
+  const files = parsed.data.files.filter((f) => safeName(f.name));
+  if (files.length === 0) {
+    return NextResponse.json({ error: "No valid files were provided." }, { status: 400 });
+  }
+
+  let totalBytes = 0;
+  for (const file of files) {
+    totalBytes += new TextEncoder().encode(file.content).length;
+  }
+  if (totalBytes > MAX_TOTAL_BYTES) {
+    return NextResponse.json({ error: "Project is too large for static analysis." }, { status: 413 });
+  }
+
+  const key = process.env.GROQ_API_KEY || "";
   const project = projectAnalyze(files);
 
-  // Skip generated/minified files from rule-based analysis
   const scannable = files.filter((f) => !project.skippedFiles.includes(f.name));
-
-  const issues: Issue[] = scannable.flatMap((f) => f.name.endsWith("package.json") ? dependencyAnalyze(f.name, f.content) : [...regexAnalyze(f.name, f.content), ...astAnalyze(f.name, f.content), ...pythonAnalyze(f.name, f.content)]);
+  const issues: Issue[] = scannable.flatMap((f) =>
+    f.name.endsWith("package.json")
+      ? dependencyAnalyze(f.name, f.content)
+      : [...regexAnalyze(f.name, f.content), ...astAnalyze(f.name, f.content), ...pythonAnalyze(f.name, f.content)]
+  );
   issues.push(...project.issues);
 
   let aiNote: string | undefined;
   if (key) {
     const candidates = scannable.filter((f) => !f.name.endsWith("package.json"));
-    const targets = candidates.slice(0, AI_FILE_CAP);
+    const priority = candidates
+      .filter((f) => /(?:auth|login|middleware|route|api|db|config|env|secret|jwt|token|session)/i.test(f.name))
+      .concat(candidates.filter((f) => !/(?:auth|login|middleware|route|api|db|config|env|secret|jwt|token|session)/i.test(f.name)));
+
+    const targets = priority.slice(0, 8);
     let limited = false;
-    for (let i = 0; i < targets.length; i += 4) { // 4 files at a time
-      const batch = await Promise.all(targets.slice(i, i + 4).map((f) => groqReview(key, f.name, f.content)));
-      batch.forEach((b) => { issues.push(...b.issues); limited ||= b.rateLimited; });
+
+    for (let i = 0; i < targets.length; i += 4) {
+      const batch = await Promise.all(
+        targets.slice(i, i + 4).map((f) => groqReview(key, f.name, f.content))
+      );
+      batch.forEach((b) => {
+        issues.push(...b.issues);
+        limited ||= b.rateLimited;
+      });
       if (limited) break;
     }
-    if (limited) aiNote = "The free AI service was busy, so AI review is partial. Rule-based results are complete. Try again in a minute.";
-    else if (candidates.length > AI_FILE_CAP) aiNote = `AI review covered the first ${AI_FILE_CAP} of ${candidates.length} files. Rule-based checks covered all of them.`;
+
+    if (limited) {
+      aiNote = "AI review is partial because the provider is rate-limited. Deterministic checks are complete.";
+    }
   }
 
-  // Group duplicate issues (same rule + same file = one card with ×N)
   const grouped = groupIssues(issues);
 
   return NextResponse.json({
