@@ -48,7 +48,7 @@ export function IssueCard({ issue, status, onMark, context }: { issue: Issue & {
             ? <pre className="overflow-x-auto rounded-lg bg-bg p-3 text-xs"><code>{issue.patched || "(delete this line)"}</code></pre>
             : <pre className="overflow-x-auto rounded-lg bg-bg p-3 text-xs"><code>{aiFix ?? issue.fix}</code></pre>}
           {!hasPatch && context && <Button variant="outline" className="mt-2" onClick={generate} disabled={loading}>{loading ? "Generating…" : aiFix ? "Regenerate AI fix" : "✨ Generate AI fix"}</Button>}
-          <p className="mt-1 text-xs text-muted">Test it: run your app and repeat the action that uses this line, then re-scan to confirm it's gone.</p>
+          <p className="mt-1 text-xs text-muted">Test it: run your app and repeat the action that uses this line, then re-scan to confirm it&apos;s gone.</p>
         </div>
         <LearnPanel title={issue.title} />
         <div className="flex gap-2">

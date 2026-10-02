@@ -8,7 +8,7 @@ export default function SharedPage() {
   const [r, setR] = useState<SharedReport | "expired" | null | undefined>(undefined);
   useEffect(() => { void decodeReport(location.hash.slice(1)).then(setR); }, []);
   if (r === undefined) return <div aria-busy="true" className="h-24 animate-pulse rounded-xl bg-card" />;
-  if (r === null) return <p>This link isn't valid. Ask the sender for a fresh one.</p>;
+  if (r === null) return <p>This link isn&apos;t valid. Ask the sender for a fresh one.</p>;
   if (r === "expired") return <p>This shared report has expired. Ask the sender for a new link.</p>;
   return (
     <div className="space-y-4">

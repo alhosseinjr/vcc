@@ -20,7 +20,7 @@ export function LearnPanel({ title }: { title: string }) {
       <pre className="overflow-x-auto rounded-lg bg-bg p-2 text-xs"><code>{lesson.good}</code></pre>
       <div className="flex flex-wrap items-center gap-3 text-xs">
         {lesson.links.map((l) => <a key={l.url} href={l.url} target="_blank" rel="noopener noreferrer" className="text-accent underline">{l.label}</a>)}
-        <Button variant="ghost" onClick={hide}>Don't show this again</Button>
+        <Button variant="ghost" onClick={hide}>Don&apos;t show this again</Button>
       </div>
     </div>
   );

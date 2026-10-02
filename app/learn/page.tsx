@@ -118,7 +118,7 @@ export default function LearnPage() {
               
               <div>
                 <strong className="block text-sm mb-1 text-muted">Why does it matter?</strong>
-                <p className="text-sm italic">"{lesson.why}"</p>
+                <p className="text-sm italic">&quot;{lesson.why}&quot;</p>
               </div>
               
               <div>

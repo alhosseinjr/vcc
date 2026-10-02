@@ -12,7 +12,7 @@ export function FixAllDialog({ issues, onApply, onClose }: { issues: Issue[]; on
   return (
     <dialog ref={ref} onClose={onClose} aria-labelledby="fixall-title" className="w-full max-w-2xl rounded-xl border border-border bg-bg p-5 text-fg backdrop:bg-black/50">
       <h2 id="fixall-title" className="text-lg font-semibold">Review {issues.length} automatic fixes</h2>
-      <p className="mb-3 text-sm text-muted">Uncheck any you don't want. You'll get a ZIP of the patched files. Test your app before deploying.</p>
+      <p className="mb-3 text-sm text-muted">Uncheck any you don&apos;t want. You&apos;ll get a ZIP of the patched files. Test your app before deploying.</p>
       <ul className="max-h-80 space-y-2 overflow-y-auto">
         {issues.map((i) => (
           <li key={i.id} className="rounded-lg border border-border p-2 text-xs">

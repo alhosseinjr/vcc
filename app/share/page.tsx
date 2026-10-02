@@ -3,9 +3,11 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { decodeShareHash, type Annotation } from "@/lib/annotations";
 import { Button } from "@/components/ui/Button";
+import { useToast } from "@/components/common/ToastProvider";
 
 export default function ShareLandingPage() {
   const router = useRouter();
+  const toast = useToast();
   const [data, setData] = useState<{ v: string; g?: string; a: Annotation[]; i?: any[] } | null>(null);
 
   useEffect(() => {
@@ -18,7 +20,7 @@ export default function ShareLandingPage() {
     
     const decoded = decodeShareHash(hash);
     if (!decoded) {
-      alert("Invalid or broken share link.");
+      toast("Invalid or broken share link.");
       router.replace("/");
       return;
     }
@@ -41,7 +43,7 @@ export default function ShareLandingPage() {
               // We could automatically trigger a scan, but it's better to send them to home with the URL pre-filled if possible, 
               // or just tell them to copy it. For simplicity, just copy to clipboard and send to home.
               navigator.clipboard.writeText(data.g!);
-              alert("GitHub URL copied to clipboard! Paste it in the GitHub Scanner on the home page.");
+              toast("GitHub URL copied! Paste it in the GitHub Scanner on the home page.");
               router.push("/");
             }}>Copy URL & Go to Scanner</Button>
           </div>

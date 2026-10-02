@@ -59,7 +59,7 @@ export const RULES: Rule[] = [
     analogy: "Like letting someone erase and rewrite your entire whiteboard.", fix: "Use element.textContent = value or DOM manipulation instead of document.write()."
   },
   /* ── 12 ── */ {
-    id: "http-url", re: /['"]http:\/\/[^'"]+['"]/i, severity: "medium", category: "security", confidence: "low",
+    id: "http-url", re: /['"]http:\/\/(?!localhost\b|127\.0\.0\.1\b)[^'"]+['"]/i, severity: "medium", category: "security", confidence: "low",
     title: "Insecure HTTP URL in code", explanation: "Using http:// instead of https:// means data travels unencrypted. Anyone on the same network can read or change it.",
     analogy: "Like sending a postcard instead of a sealed letter.", fix: "Change http:// to https:// — almost all services support it now.", langs: ["javascript", "typescript"]
   },

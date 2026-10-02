@@ -12,7 +12,7 @@ const STATIC_ASSETS = [
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(STATIC_ASSETS).catch(err => console.log('Failed to cache static assets during install', err));
+      return cache.addAll(STATIC_ASSETS).catch(() => { /* pre-cache is best-effort */ });
     })
   );
   self.skipWaiting();

@@ -12,7 +12,7 @@ export default function ScanResultsPage() {
   useEffect(() => { setScan(getScan(id)); setFiles(loadScanFiles(id)); }, [id]);
 
   if (scan === undefined) return <div aria-busy="true" className="space-y-3">{[80, 40, 40, 40].map((h, i) => <div key={i} style={{ height: h }} className="animate-pulse rounded-xl bg-card" />)}</div>;
-  if (scan === null) return <div className="space-y-3 text-center"><p>We couldn't find that scan. It may have been cleared.</p><Link href="/" className="text-accent underline">Start a new scan</Link></div>;
+  if (scan === null) return <div className="space-y-3 text-center"><p>We couldn&apos;t find that scan. It may have been cleared.</p><Link href="/" className="text-accent underline">Start a new scan</Link></div>;
   return (
     <div className="space-y-4">
       <Link href="/" className="text-sm text-accent underline">← New scan</Link>
