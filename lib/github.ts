@@ -14,29 +14,37 @@ export interface GitHubParseResult {
   path: string;
 }
 
-const DISALLOWED_HOSTS = [
+const FORBIDDEN_HOST_PREFIXES = [
   "localhost",
-  "127.0.0.1",
+  "127.",
   "0.0.0.0",
   "::1",
-  "169.254.169.254",
-  "10.0.0.0",
-  "192.168.0.0",
-  "172.16.0.0",
+  "10.",
+  "192.168.",
+  "172.16.",
+  "172.17.",
+  "172.18.",
+  "172.19.",
+  "172.20.",
+  "172.21.",
+  "172.22.",
+  "172.23.",
+  "172.24.",
+  "172.25.",
+  "172.26.",
+  "172.27.",
+  "172.28.",
+  "172.29.",
+  "172.30.",
+  "172.31.",
+  "169.254.",
+  "fc00:",
+  "fe80:",
 ];
 
-const isPrivateHost = (host: string): boolean => {
+const isForbiddenHost = (host: string): boolean => {
   const normalized = host.toLowerCase();
-  if (normalized === "localhost" || normalized === "127.0.0.1" || normalized === "::1") return true;
-  if (normalized.startsWith("127.")) return true;
-  if (normalized.startsWith("10.")) return true;
-  if (normalized.startsWith("192.168.")) return true;
-  if (normalized.startsWith("172.")) {
-    const octet = Number(normalized.split(".")[1]);
-    return octet >= 16 && octet <= 31;
-  }
-  if (normalized.startsWith("169.254.")) return true;
-  return false;
+  return FORBIDDEN_HOST_PREFIXES.some((prefix) => normalized === prefix || normalized.startsWith(prefix));
 };
 
 export function parseGitHubUrl(url: string): GitHubParseResult | null {
@@ -47,20 +55,24 @@ export function parseGitHubUrl(url: string): GitHubParseResult | null {
     if (parsed.hash) return null;
 
     const host = parsed.hostname.replace(/^www\./i, "").toLowerCase();
-    if (host !== "github.com") return null;
-    if (isPrivateHost(host)) return null;
+    if (host !== "github.com" || isForbiddenHost(host)) return null;
 
     const parts = parsed.pathname.split("/").filter(Boolean);
     if (parts.length < 2) return null;
 
     const owner = parts[0];
     const repo = parts[1].replace(/\.git$/, "");
+    if (!owner || !repo || /\.\.|^\.|\/$/.test(owner) || /\.\.|^\.|\/$/.test(repo)) {
+      return null;
+    }
+
     let branch = "HEAD";
     let path = "";
 
     if (parts.length >= 4 && (parts[2] === "tree" || parts[2] === "blob")) {
       branch = parts[3];
       path = parts.slice(4).join("/");
+      if (path.includes("..") || path.startsWith("/") || path.includes("\\")) return null;
     }
 
     return { owner, repo, branch, path };
@@ -105,7 +117,7 @@ export async function resolveDefaultBranch(owner: string, repo: string, token?: 
   const url = `https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}`;
   const res = await githubFetch(url, githubHeaders(token, { Accept: "application/vnd.github.v3+json" }), signal);
   throwGitHubHttp(res, "Repository not found.");
-  const data = await res.json() as { default_branch: string };
+  const data = (await res.json()) as { default_branch: string };
   return data.default_branch;
 }
 
@@ -114,14 +126,18 @@ export async function fetchGitHubTree(owner: string, repo: string, branch: strin
   const url = `https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/git/trees/${encodeURIComponent(resolvedBranch)}?recursive=1`;
   const res = await githubFetch(url, githubHeaders(token, { Accept: "application/vnd.github.v3+json" }), signal);
   throwGitHubHttp(res, "Repository or branch not found.");
-  const data = await res.json() as { tree: GitHubTreeItem[]; truncated: boolean };
+  const data = (await res.json()) as { tree: GitHubTreeItem[]; truncated: boolean };
   if (data.truncated) {
     throw new Error("GitHub repository tree is too large to analyze safely.");
   }
-  return data.tree.slice(0, 2000);
+  return data.tree.filter((item) => !item.path.includes("..") && !item.path.startsWith("/")).slice(0, 2000);
 }
 
 export async function fetchGitHubFile(owner: string, repo: string, branch: string, path: string, token?: string, signal?: AbortSignal): Promise<string> {
+  if (path.includes("..") || path.startsWith("/") || path.includes("\\")) {
+    throw new Error("Unsafe GitHub file path.");
+  }
+
   const encodedPath = path.split("/").map(encodeURIComponent).join("/");
   const resolvedBranch = branch === "HEAD" ? "HEAD" : branch;
 
