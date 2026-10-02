@@ -33,7 +33,7 @@ export async function extractZip(file: File): Promise<InputFile[]> {
       throw new Error(`Archive contains unsafe path: ${entry.name}`);
     }
 
-    if (entry.unixPermissions && (entry.unixPermissions & 0o170000) === 0o120000) {
+    if (typeof entry.unixPermissions === "number" && (entry.unixPermissions & 0o170000) === 0o120000) {
       throw new Error(`Archive contains symlinks, which are not allowed.`);
     }
 

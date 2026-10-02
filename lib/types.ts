@@ -6,6 +6,8 @@ export interface Issue {
   confidence: "high" | "medium" | "low"; source: "rules" | "ai";
   /** Set when a safe one-line replacement exists: original line and its fixed version. */
   original?: string; patched?: string;
+  /** Set on AI-sourced issues: the model's rule id and its description of the offending behavior. */
+  ruleId?: string; evidence?: string;
 }
 export const SEVERITY_ORDER: Severity[] = ["critical", "high", "medium", "low", "info"];
 export const SEVERITY_ICON: Record<Severity, string> = { critical: "🔴", high: "🟠", medium: "🟡", low: "🔵", info: "⚪" };
