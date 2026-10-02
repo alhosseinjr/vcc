@@ -11,6 +11,7 @@ export interface SavedScan {
   projectType?: string;
   skippedFileCount?: number;
   skippedFileNames?: string[];
+  githubUrl?: string;
 }
 
 const HISTORY_KEY = "vcc:history";
