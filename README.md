@@ -8,6 +8,10 @@ Instead of overwhelming you with technical jargon, it explains each issue in pla
 
 ## Overview
 
+Vibe-Coded Cleanup is a fast, offline-capable code review tool focusing heavily on privacy and accessibility for non-technical users. It employs an excellent client-side architecture (PWA, virtualized lists, edge/client static analysis) and seamlessly layers on AI when deeper semantic understanding is needed.
+
+![Demo of scanning code](./public/vcc_demo.webp)
+
 AI coding assistants such as ChatGPT, Claude, and Cursor make it easier than ever to build complete applications without being an experienced software engineer.
 
 However, generated code can also introduce problems that are difficult to spot:
@@ -130,6 +134,15 @@ is stored locally using browser storage such as:
 
 This allows the application to maintain useful history without requiring a centralized database for user projects.
 
+### What Leaves Your Machine?
+
+Vibe-Coded Cleanup is built with privacy in mind. Here is exactly what data is transferred or saved:
+
+* **Source Code**: If using rule-based local scanning, your code **never leaves your browser**. If using the AI analysis, the selected code snippets are sent directly to the Groq API (api.groq.com).
+* **GitHub Repositories**: When providing a GitHub URL, file contents are fetched directly from GitHub's servers (`api.github.com` and `raw.githubusercontent.com`).
+* **Local Storage**: Your scan history, preferences, and API keys are stored in your browser's local storage and IndexedDB.
+* **Output Artifacts**: You can explicitly download HTML, JSON, and Markdown reports, or a ZIP file of the automatically patched source files. These are generated locally.
+
 ---
 
 ## Progressive Web App
@@ -155,6 +168,16 @@ Large scan results can contain thousands of detected issues.
 To maintain smooth rendering and scrolling, Vibe-Coded Cleanup uses `@tanstack/react-virtual` to virtualize large lists and minimize unnecessary DOM rendering.
 
 The result is a responsive interface even when processing large AI-generated outputs.
+
+### Analysis Benchmark
+
+The local rule-based analysis is exceptionally fast. Running over a **147 KB (~7000 lines)** code payload on a standard machine yields:
+
+| Analyzer             | Execution Time |
+|----------------------|----------------|
+| **Regex Analyzer**   | ~7.10 ms       |
+| **AST Analyzer**     | ~35.97 ms      |
+| **Dependency Checks**| ~0.14 ms       |
 
 ---
 
