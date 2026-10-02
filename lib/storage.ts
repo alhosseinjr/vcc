@@ -15,6 +15,8 @@ export interface SavedScan {
 
 const HISTORY_KEY = "vcc:history";
 const MARKS_KEY = "vcc:marks";
+const MAX_HISTORY_ITEMS = 25;
+const MAX_SCAN_AGE_MS = 1000 * 60 * 60 * 24 * 30; // 30 days
 
 const safeJsonParse = <T>(value: string | null, fallback: T): T => {
   try {
@@ -24,9 +26,16 @@ const safeJsonParse = <T>(value: string | null, fallback: T): T => {
   }
 };
 
+const sanitizeHistory = (items: SavedScan[]): SavedScan[] =>
+  items
+    .filter((item) => item && typeof item.id === "string")
+    .filter((item) => Date.now() - (item.at || 0) <= MAX_SCAN_AGE_MS)
+    .slice(0, MAX_HISTORY_ITEMS);
+
 export function loadHistory(): SavedScan[] {
   try {
-    return safeJsonParse<SavedScan[]>(localStorage.getItem(HISTORY_KEY), []);
+    const parsed = safeJsonParse<SavedScan[]>(localStorage.getItem(HISTORY_KEY), []);
+    return sanitizeHistory(parsed);
   } catch {
     return [];
   }
@@ -34,8 +43,8 @@ export function loadHistory(): SavedScan[] {
 
 export function saveScan(s: SavedScan): void {
   try {
-    const history = loadHistory();
-    const next = [s, ...history].slice(0, 25);
+    const history = sanitizeHistory(loadHistory());
+    const next = [s, ...history].slice(0, MAX_HISTORY_ITEMS);
     localStorage.setItem(HISTORY_KEY, JSON.stringify(next));
   } catch {
     // Ignore quota issues; do not persist raw source files.
@@ -68,7 +77,11 @@ export interface Marks {
 
 export function loadMarks(): Marks {
   try {
-    return { fixed: [], ignored: [], ...(safeJsonParse<Partial<Marks>>(localStorage.getItem(MARKS_KEY), {})) };
+    return {
+      fixed: [],
+      ignored: [],
+      ...(safeJsonParse<Partial<Marks>>(localStorage.getItem(MARKS_KEY), {})),
+    };
   } catch {
     return { fixed: [], ignored: [] };
   }
@@ -90,7 +103,14 @@ export type StoredFile = { name: string; content: string };
 
 export function saveScanFiles(id: string, files: StoredFile[]): void {
   try {
-    sessionStorage.setItem(`vcc:files:${id}`, JSON.stringify(files.slice(0, 100)));
+    const trimmed = files
+      .filter((file) => typeof file?.name === "string" && typeof file?.content === "string")
+      .slice(0, 25)
+      .map((file) => ({
+        name: file.name,
+        content: file.content.slice(0, 1000),
+      }));
+    sessionStorage.setItem(`vcc:files:${id}`, JSON.stringify(trimmed));
   } catch {
     // Too large for browser storage; do not persist raw source data.
   }
