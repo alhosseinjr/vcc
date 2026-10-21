@@ -9,7 +9,8 @@ export const RULES: Rule[] = [
     analogy: "Like taping your house key to the front door.", fix: "Move it to an environment variable: const key = process.env.MY_API_KEY; then add it in your host's settings and rotate the leaked one."
   },
   /* ── 2 ── */ {
-    id: "sql-concat", re: /(SELECT|INSERT|UPDATE|DELETE)\b[^;\n]*(\+\s*\w|\$\{)/i, severity: "critical", category: "security", confidence: "medium",
+    id: "sql-concat", re: /\b(?:SELECT\b[^;\n]{0,120}\bFROM\b|INSERT\s+INTO\b|UPDATE\s+\S+\s+SET\b|DELETE\s+FROM\b)[^;\n]{0,120}(?:\+\s*\w|\$\{)/i,
+    severity: "critical", category: "security", confidence: "medium",
     title: "Database query built from raw text", explanation: "User input is glued into a database command. Attackers can type commands that read or delete your data.",
     analogy: "Like letting a stranger write the last line of your bank transfer form.", fix: "Use placeholders: db.query('SELECT * FROM users WHERE id = $1', [id])"
   },

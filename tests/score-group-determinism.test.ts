@@ -17,26 +17,40 @@ describe("healthScore", () => {
     expect(healthScore([])).toBe(100);
   });
 
-  it("applies exact formula: 0 crit, 3 high, 2 med, 39 low = 44", () => {
+  it("single-file scan follows the raw penalty through the curve: 3 high, 2 med, 39 low", () => {
     const issues: Issue[] = [
       ...Array.from({ length: 3 }, () => fakeIssue("high")),
       ...Array.from({ length: 2 }, () => fakeIssue("medium")),
       ...Array.from({ length: 39 }, () => fakeIssue("low")),
     ];
-    // crit*30 + high*12 + med*5 + min(low, 10) = 0 + 36 + 10 + 10 = 56 → 100 - 56 = 44
-    expect(healthScore(issues)).toBe(44);
+    // all in one file, so avg = raw penalty: crit*30 + high*12 + med*5 + min(low,10) = 0 + 36 + 10 + 10 = 56
+    // penalty = 100 * (1 - e^(-56/45)) ≈ 71.2 → score ≈ 29
+    expect(healthScore(issues)).toBe(29);
   });
 
   it("caps low penalty at 10 regardless of count", () => {
     const issues: Issue[] = Array.from({ length: 100 }, () => fakeIssue("low"));
-    // min(100, 10) = 10 → 100 - 10 = 90
-    expect(healthScore(issues)).toBe(90);
+    // min(100, 10) = 10 → avg 10 → penalty ≈ 19.9 → score ≈ 80
+    expect(healthScore(issues)).toBe(80);
   });
 
-  it("floors at 0", () => {
+  it("never collapses below 0 and stays proportional", () => {
     const issues: Issue[] = Array.from({ length: 5 }, () => fakeIssue("critical"));
-    // 5 * 30 = 150 → max(0, 100-150) = 0
-    expect(healthScore(issues)).toBe(0);
+    // 5 combined criticals in one file = 150 raw pts → penalty ≈ 96.4 → score ≈ 4, not hard 0
+    expect(healthScore(issues)).toBeGreaterThan(0);
+  });
+
+  it("spreads the same raw penalty across more files for a higher score", () => {
+    // 40 mediums concentrated in one file vs one per each of 40 files
+    const concentrated = Array.from({ length: 40 }, () => fakeIssue("medium"));
+    const spread = Array.from({ length: 40 }, (_, f) => fakeIssue("medium", { file: `src/f${f}.ts` }));
+    expect(healthScore(spread)).toBeGreaterThan(healthScore(concentrated));
+  });
+
+  it("a repo with one small issue per file is not zeroed out", () => {
+    // Regression: GitHub scans where every file trips one low/medium rule used to score 0
+    const issues = Array.from({ length: 40 }, (_, f) => fakeIssue("medium", { file: `src/f${f}.ts` }));
+    expect(healthScore(issues)).toBeGreaterThanOrEqual(80);
   });
 
   it("info issues have zero weight", () => {

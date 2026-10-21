@@ -10,6 +10,18 @@ describe("regexAnalyze", () => {
   it("flags SQL built with template strings", () => {
     expect(regexAnalyze("db.ts", "db.query(`SELECT * FROM users WHERE id = ${id}`)")[0].severity).toBe("critical");
   });
+  it("flags concatenated SQL regardless of verb", () => {
+    expect(regexAnalyze("db.ts", 'db.query("DELETE FROM items WHERE id = " + id)')).toHaveLength(1);
+    expect(regexAnalyze("db.ts", 'db.query("UPDATE items SET name = " + name)')).toHaveLength(1);
+    expect(regexAnalyze("db.ts", 'db.query("INSERT INTO items VALUES (" + v + ")")')).toHaveLength(1);
+  });
+  it("does not flag HTTP endpoint strings (fetch verbs + template literals)", () => {
+    // Regression: every fetch-style repo used to get one false CRITICAL per endpoint
+    expect(regexAnalyze("api.ts", "fetch(`DELETE /api/items/${id}`)")).toEqual([]);
+    expect(regexAnalyze("api.ts", 'fetch("POST /api/logs/" + uid)')).toEqual([]);
+    // "insert into" as part of a URL is not SQL: the rule requires the SQL verb spacing
+    expect(regexAnalyze("api.ts", 'fetch(`/insert-into-archive/${id}`)')).toEqual([]);
+  });
   it("flags eval and reports line numbers", () => {
     expect(regexAnalyze("x.js", "ok\neval(input)")[0].line).toBe(2);
   });
