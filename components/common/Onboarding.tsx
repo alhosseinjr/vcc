@@ -31,7 +31,7 @@ export function Onboarding() {
   }, []);
 
   const complete = () => {
-    try { localStorage.setItem(ONBOARDING_KEY, "true"); } catch {}
+    try { localStorage.setItem(ONBOARDING_KEY, "true"); } catch { /* storage may be blocked; onboarding will just show again */ }
     setStep(0);
   };
 

@@ -207,12 +207,16 @@ The local rule-based analysis is exceptionally fast. Running over a **147 KB (~7
 vcc/
 ├── app/                         # Next.js App Router
 │   ├── api/                     # Serverless API routes
+│   ├── architecture/            # Dependency graph, heatmap & treemap views
 │   ├── compare/                 # Historical scan comparison
+│   ├── help/                    # Help & FAQ
 │   ├── learn/                   # Learning center
-│   └── scan/                    # Scan results
+│   ├── scan/                    # Scan results
+│   └── settings/                # User settings (API keys)
 │
 ├── components/                  # React components
 │   ├── common/                  # Shared UI components
+│   ├── layout/                  # Header, footer
 │   ├── results/                 # Issue cards and result views
 │   ├── scanner/                 # Upload and code scanning UI
 │   └── ui/                      # Base design system
@@ -242,8 +246,8 @@ vcc/
 Clone the repository:
 
 ```bash
-git clone https://github.com/your-username/vibe-coded-cleanup.git
-cd vibe-coded-cleanup
+git clone https://github.com/alhosseinjr/vcc.git
+cd vcc
 ```
 
 Install dependencies:

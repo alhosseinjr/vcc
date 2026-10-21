@@ -28,7 +28,7 @@ export function GitHubScanner({ onScan, busy }: { onScan: (url?: string) => void
     abort.current = ctrl;
 
     try {
-      let token = ""; try { token = localStorage.getItem("vcc:githubToken") ?? ""; } catch {}
+      let token = ""; try { token = localStorage.getItem("vcc:githubToken") ?? ""; } catch { /* storage may be blocked, fall back to no token */ }
       let branch = parsed.branch;
       let filterPath = parsed.path;
       if (parsed.branch === "HEAD") {

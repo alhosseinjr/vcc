@@ -2,6 +2,11 @@
   "name": "vibe-coded-cleanup",
   "version": "0.1.0",
   "private": true,
+  "description": "Free, instant security and quality review for apps built with AI coding assistants — plain-English explanations and one-click fixes.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/alhosseinjr/vcc.git"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",

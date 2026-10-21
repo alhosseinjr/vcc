@@ -25,7 +25,7 @@ export default function LearnPage() {
     if (next.has(name)) next.delete(name);
     else next.add(name);
     setProgress(next);
-    try { localStorage.setItem(PROGRESS_KEY, JSON.stringify([...next])); } catch {}
+    try { localStorage.setItem(PROGRESS_KEY, JSON.stringify([...next])); } catch { /* storage may be blocked; progress stays in memory */ }
   };
 
   const toggleBookmark = (name: string) => {
@@ -33,7 +33,7 @@ export default function LearnPage() {
     if (next.has(name)) next.delete(name);
     else next.add(name);
     setBookmarks(next);
-    try { localStorage.setItem(BOOKMARKS_KEY, JSON.stringify([...next])); } catch {}
+    try { localStorage.setItem(BOOKMARKS_KEY, JSON.stringify([...next])); } catch { /* storage may be blocked; bookmarks stay in memory */ }
   };
 
   const filteredLessons = useMemo(() => {

@@ -14,7 +14,7 @@ export function PWAUpdater() {
 
   useEffect(() => {
     // Check if dismissed previously
-    try { setIsDismissed(localStorage.getItem(DISMISSED_KEY) === "true"); } catch {}
+    try { setIsDismissed(localStorage.getItem(DISMISSED_KEY) === "true"); } catch { /* storage may be blocked; banner simply shows */ }
 
     if (typeof window !== "undefined" && "serviceWorker" in navigator) {
       navigator.serviceWorker.register("/sw.js").then((reg) => {
@@ -62,7 +62,7 @@ export function PWAUpdater() {
 
   const handleDismiss = () => {
     setIsInstallable(false);
-    try { localStorage.setItem(DISMISSED_KEY, "true"); } catch {}
+    try { localStorage.setItem(DISMISSED_KEY, "true"); } catch { /* storage may be blocked; banner will show again */ }
   };
 
   if (!isInstallable || isDismissed) return null;
