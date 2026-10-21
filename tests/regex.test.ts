@@ -25,6 +25,13 @@ describe("regexAnalyze", () => {
   it("flags eval and reports line numbers", () => {
     expect(regexAnalyze("x.js", "ok\neval(input)")[0].line).toBe(2);
   });
+  it("does not flag dangerous patterns that only exist in prose, strings or regex definitions", () => {
+    // Regression: the scanner used to flag its own rule definitions and lesson/prose strings
+    expect(regexAnalyze("x.ts", 'what: "eval runs any text as code."')).toEqual([]);
+    expect(regexAnalyze("x.ts", 'const doc = "never call document.write(payload) with user text";')).toEqual([]);
+    expect(regexAnalyze("x.ts", "// prose: an example of el.innerHTML = userHtml is below")).toEqual([]);
+    expect(regexAnalyze("x.ts", "const RE = new RegExp('alert\\\\s*\\\\(');")).toEqual([]);
+  });
   it("returns nothing for clean code", () => { expect(regexAnalyze("c.js", "const a = 1;")).toEqual([]); });
   it("scores clean code 100 and floors at 0", () => {
     expect(healthScore([])).toBe(100);

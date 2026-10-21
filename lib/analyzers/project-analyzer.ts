@@ -29,6 +29,20 @@ export function isGeneratedFile(f: F): boolean {
   return false;
 }
 
+/**
+ * Returns true for test/fixture files. They are skipped by default: fixtures are
+ * intentionally vulnerable sample code, so scanning them mostly reports noise about
+ * demo strings rather than real problems in shipped code. Real secret leaks in tests
+ * are better caught at commit time (gitleaks — see the integration tips).
+ */
+export function isTestFile(name: string): boolean {
+  const n = name.toLowerCase();
+  if (/(^|\/)(tests?|__tests__|e2e|cypress|fixtures?)(\/|$)/.test(n)) return true;
+  if (/\.(test|spec)\.[cm]?[jt]sx?$/.test(n)) return true;
+  if (/(^|\/)test_[^/]*\.py$/.test(n) || /(^|\/)[^/]*_test\.py$/.test(n)) return true;
+  return n.endsWith("conftest.py");
+}
+
 /** Guess the project kind from package.json, manifest.json and file extensions. */
 export function detectProjectType(files: F[]): ProjectType {
   const d = depsOf(files);
@@ -61,7 +75,7 @@ export function projectAnalyze(files: F[]): { type: ProjectType; issues: Issue[]
 
   // Detect generated/minified files to skip
   for (const f of files) {
-    if (isGeneratedFile(f)) skippedFiles.push(f.name);
+    if (isGeneratedFile(f) || isTestFile(f.name)) skippedFiles.push(f.name);
   }
 
   if (type.id === "node-api") {

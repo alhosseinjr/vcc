@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { detectProjectType, projectAnalyze, isGeneratedFile } from "../lib/analyzers/project-analyzer";
+import { detectProjectType, projectAnalyze, isGeneratedFile, isTestFile } from "../lib/analyzers/project-analyzer";
 import { suggestIntegrations } from "../lib/integrations";
 const pkg = (deps: object) => ({ name: "package.json", content: JSON.stringify({ dependencies: deps }) });
 describe("project templates", () => {
@@ -58,5 +58,33 @@ describe("isGeneratedFile", () => {
     const result = projectAnalyze(files);
     expect(result.skippedFiles).toContain("assets/llm.js");
     expect(result.skippedFiles).not.toContain("src/app.js");
+  });
+});
+
+describe("isTestFile", () => {
+  const cases: [string, boolean][] = [
+    ["tests/regex.test.ts", true],
+    ["src/utils.test.ts", true],
+    ["app/spec/x.spec.tsx", true],
+    ["e2e/scan.spec.ts", true],
+    ["__tests__/a.ts", true],
+    ["tests/python/test_user.py", true],
+    ["tests/python/conftest.py", true],
+    ["src/contest.py", false],
+    ["src/latest.ts", false],
+    ["src/app.js", false],
+    ["lib/main.py", false],
+    ["src/test-utils.ts", false],
+  ];
+  it.each(cases)("isTestFile(%s) === %s", (name, want) => {
+    expect(isTestFile(name)).toBe(want);
+  });
+  it("skips test fixtures from analysis (they are intentionally vulnerable sample code)", () => {
+    const files = [
+      { name: "package.json", content: JSON.stringify({ dependencies: { next: "14" } }) },
+      { name: "tests/regex.test.ts", content: 'const apiKey = "sk-live-1234";\neval(x);\ndb.query(`SELECT * FROM users WHERE id = ${id}`);\n' },
+    ];
+    const r = projectAnalyze(files);
+    expect(r.skippedFiles).toContain("tests/regex.test.ts");
   });
 });
