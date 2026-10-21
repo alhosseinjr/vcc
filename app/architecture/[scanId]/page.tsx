@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { loadHistory, type SavedScan } from "@/lib/storage";
 import { useTheme } from "@/components/common/ThemeProvider";
+import { useToast } from "@/components/common/ToastProvider";
 import { Button } from "@/components/ui/Button";
 import type { Annotation } from "@/lib/annotations";
 
@@ -15,6 +16,7 @@ const Treemap = dynamic(() => import("@/components/architecture/Treemap"), { ssr
 export default function ArchitecturePage({ params }: { params: { scanId: string } }) {
   const router = useRouter();
   const { theme } = useTheme();
+  const toast = useToast();
   const [scan, setScan] = useState<SavedScan | null>(null);
   const [files, setFiles] = useState<{ name: string; content: string }[] | null>(null);
   const [tab, setTab] = useState<"diagram" | "heatmap" | "treemap">("diagram");
@@ -66,8 +68,12 @@ export default function ArchitecturePage({ params }: { params: { scanId: string 
     }
     const hash = encodeShareHash(tab, scan?.githubUrl, annotations, minimalIssues);
     const url = `${window.location.origin}/share#${hash}`;
-    navigator.clipboard.writeText(url);
-    alert("Share link copied to clipboard!");
+    try {
+      await navigator.clipboard.writeText(url);
+      toast("Share link copied to clipboard!");
+    } catch {
+      toast("Couldn't copy — the browser blocked clipboard access.");
+    }
   };
 
   useEffect(() => {

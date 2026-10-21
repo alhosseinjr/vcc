@@ -49,10 +49,13 @@ export function ResultsView({ scan, files }: { scan: SavedScan; files: { name: s
   const ignoredCount = pool.filter((i) => statusOf(i.id) === "ignored").length;
 
   const exportMd = () => { download("report.md", toMarkdown(open, score), "text/markdown"); toast("Report downloaded"); };
-  // Keyboard shortcuts: "/" jumps to the filter, "e" exports Markdown. Ignored while typing.
+  // Keyboard shortcuts: "/" jumps to the filter, "e" exports Markdown.
+  // Ignored while typing, while a modal dialog is open, or with modifier keys held.
   useEffect(() => {
     const h = (e: KeyboardEvent) => {
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
       if (e.target instanceof HTMLElement && /INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return;
+      if (document.querySelector("dialog[open], [role='dialog'][aria-modal='true']")) return;
       if (e.key === "/") { e.preventDefault(); filterRef.current?.focus(); }
       if (e.key === "e") exportMd();
     };

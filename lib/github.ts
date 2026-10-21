@@ -71,6 +71,32 @@ export async function resolveDefaultBranch(owner: string, repo: string, token?: 
   return data.default_branch;
 }
 
+/**
+ * Figure out the branch and path when a URL has more than just the branch after
+ * /tree/ or /blob/: GitHub URLs don't escape "/" inside branch names, so
+ * ".../tree/feature/auth" could be a branch named "feature/auth" or a path on "feature".
+ * Resolved the way GitHub's web UI does: try refs shortest-first and split at the one that exists.
+ * Returns null if no segment prefix is an existing branch (caller falls back to first segments).
+ */
+export async function resolveBranchAndPath(
+  owner: string,
+  repo: string,
+  segments: string[],
+  token?: string,
+  signal?: AbortSignal
+): Promise<{ branch: string; path: string } | null> {
+  for (let take = 1; take <= segments.length; take++) {
+    const branch = segments.slice(0, take).join("/");
+    const ref = branch.split("/").map(encodeURIComponent).join("/");
+    const url = `https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/git/ref/heads/${ref}`;
+    const res = await githubFetch(url, githubHeaders(token, { Accept: "application/vnd.github.v3+json" }), signal);
+    if (res.status === 404) continue; // not a branch prefix; try the next one
+    throwGitHubHttp(res, "Branch not found. If this is a private repo, provide a GitHub token in Settings.");
+    return { branch, path: segments.slice(take).join("/") };
+  }
+  return null; // no prefix exists; callers keep the original first-segment parse
+}
+
 export async function fetchGitHubTree(owner: string, repo: string, branch: string, token?: string, signal?: AbortSignal): Promise<GitHubTreeItem[]> {
   // The Trees API requires an actual ref; "HEAD" won't work.
   const resolvedBranch = branch === "HEAD" ? await resolveDefaultBranch(owner, repo, token, signal) : branch;

@@ -1,6 +1,6 @@
 "use client";
 import { useState, useRef } from "react";
-import { parseGitHubUrl, fetchGitHubTree, fetchGitHubFile, isLikelyText, resolveDefaultBranch } from "@/lib/github";
+import { parseGitHubUrl, fetchGitHubTree, fetchGitHubFile, isLikelyText, resolveDefaultBranch, resolveBranchAndPath } from "@/lib/github";
 import { Button } from "../ui/Button";
 import { detectLanguage } from "@/lib/utils";
 import { useScanInput, type InputFile } from "@/store/scan-store";
@@ -29,14 +29,21 @@ export function GitHubScanner({ onScan, busy }: { onScan: (url?: string) => void
 
     try {
       let token = ""; try { token = localStorage.getItem("vcc:githubToken") ?? ""; } catch {}
-      const branch = parsed.branch === "HEAD"
-        ? await resolveDefaultBranch(parsed.owner, parsed.repo, token, ctrl.signal)
-        : parsed.branch;
+      let branch = parsed.branch;
+      let filterPath = parsed.path;
+      if (parsed.branch === "HEAD") {
+        branch = await resolveDefaultBranch(parsed.owner, parsed.repo, token, ctrl.signal);
+      } else if (parsed.path) {
+        // Branch names can contain "/", so only GitHub can tell whether the URL holds a
+        // multi-segment branch ("/tree/feature/auth") or a branch + path ("/tree/main/src").
+        const resolved = await resolveBranchAndPath(parsed.owner, parsed.repo, [parsed.branch, ...parsed.path.split("/").filter(Boolean)], token, ctrl.signal);
+        if (resolved) { branch = resolved.branch; filterPath = resolved.path; }
+      }
       const tree = await fetchGitHubTree(parsed.owner, parsed.repo, branch, token, ctrl.signal);
 
       let filesToFetch = tree.filter((t) => t.type === "blob" && isLikelyText(t.path));
-      if (parsed.path) {
-        filesToFetch = filesToFetch.filter((f) => f.path === parsed.path || f.path.startsWith(parsed.path + "/"));
+      if (filterPath) {
+        filesToFetch = filesToFetch.filter((f) => f.path === filterPath || f.path.startsWith(filterPath + "/"));
       }
 
       if (filesToFetch.length > 300) {

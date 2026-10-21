@@ -25,7 +25,7 @@ export default function ShareLandingPage() {
       return;
     }
     setData(decoded);
-  }, [router]);
+  }, [router, toast]);
 
   if (!data) return <div className="p-8 text-center">Loading shared view...</div>;
 

@@ -102,7 +102,7 @@ These checks are extremely fast and can operate without an internet connection.
 
 #### 2. Semantic AI Analysis
 
-More complex issues are analyzed using Llama through the Groq API.
+More complex issues are analyzed with the `openai/gpt-oss-120b` model served through the Groq API.
 
 The `/api/analyze` endpoint processes code in optimized chunks to handle larger projects while remaining compatible with free-tier API limitations.
 
@@ -130,7 +130,7 @@ User-specific information such as:
 is stored locally using browser storage such as:
 
 * `localStorage`
-* `IndexedDB`
+* `sessionStorage` (source files only, cleared when the tab closes)
 
 This allows the application to maintain useful history without requiring a centralized database for user projects.
 
@@ -140,7 +140,7 @@ Vibe-Coded Cleanup is built with privacy in mind. Here is exactly what data is t
 
 * **Source Code**: If using rule-based local scanning, your code **never leaves your browser**. If using the AI analysis, the selected code snippets are sent directly to the Groq API (api.groq.com).
 * **GitHub Repositories**: When providing a GitHub URL, file contents are fetched directly from GitHub's servers (`api.github.com` and `raw.githubusercontent.com`).
-* **Local Storage**: Your scan history, preferences, and API keys are stored in your browser's local storage and IndexedDB.
+* **Local Storage**: Your scan history, preferences, and API keys are stored in your browser's local storage, and source files are kept in session storage so "Fix all" can build a patched ZIP.
 * **Output Artifacts**: You can explicitly download HTML, JSON, and Markdown reports, or a ZIP file of the automatically patched source files. These are generated locally.
 
 ---
@@ -191,12 +191,12 @@ The local rule-based analysis is exceptionally fast. Running over a **147 KB (~7
 | Icons            | Lucide React              |
 | State Management | Zustand                   |
 | AI               | Groq API                  |
-| AI Model         | Llama                     |
+| AI Model         | `openai/gpt-oss-120b` via Groq |
 | Virtualization   | `@tanstack/react-virtual` |
 | Unit Testing     | Vitest                    |
 | E2E Testing      | Playwright                |
 | Deployment       | Vercel                    |
-| Storage          | localStorage / IndexedDB  |
+| Storage          | localStorage / sessionStorage |
 | Application Type | Progressive Web App       |
 
 ---

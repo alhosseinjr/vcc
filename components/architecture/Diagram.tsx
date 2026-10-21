@@ -42,7 +42,14 @@ export default function Diagram({ files, issues, skippedFiles, onFileClick, dark
     setLoading(true);
 
     const render = async () => {
-      mermaid.initialize({ theme: dark ? "dark" : "default" });
+      // mermaid.initialize() rebuilds its config from defaults, so every knob must be
+      // passed each time — otherwise theme changes reset securityLevel to "strict"
+      // and node clicks stop working.
+      mermaid.initialize({
+        theme: dark ? "dark" : "default",
+        securityLevel: "loose",
+        themeVariables: { fontFamily: "Inter, sans-serif" },
+      });
 
       // Build mermaid source
       let source = "flowchart LR\n";
@@ -155,7 +162,7 @@ export default function Diagram({ files, issues, skippedFiles, onFileClick, dark
              let target = e.target as HTMLElement;
              while (target && target.tagName !== 'svg') {
                if (target.classList && target.classList.contains('node')) {
-                 const id = target.id.replace(/^flowchart-[^a-zA-Z0-9]*-/, ''); // rough extract
+                 const id = target.id.replace(/^flowchart-/, '').replace(/-\d+$/, ''); // cleanNode refers to the original path
                  const realNode = graph?.nodes.find(n => n.replace(/[^a-zA-Z0-9]/g, "_") === id);
                  if (realNode) onFileClick(realNode);
                  break;

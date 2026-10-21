@@ -35,4 +35,13 @@ describe("findCircularDependencies", () => {
     // Specifically c -> a closes the loop
     expect(cycles).toContainEqual(["c", "a"]);
   });
+
+  it("reports each cycle only once", () => {
+    // a <-> b is a cycle readable as a->b and b->a; neither direction should duplicate
+    const cycles = findCircularDependencies(
+      ["a", "b"],
+      [{ source: "a", target: "b" }, { source: "b", target: "a" }]
+    );
+    expect(cycles).toHaveLength(1);
+  });
 });

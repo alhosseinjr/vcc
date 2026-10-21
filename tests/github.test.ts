@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { parseGitHubUrl, isLikelyText } from "../lib/github";
+import { describe, expect, it, vi } from "vitest";
+import { parseGitHubUrl, isLikelyText, resolveBranchAndPath } from "../lib/github";
 
 describe("parseGitHubUrl", () => {
   it("parses base repo url", () => {
@@ -28,6 +28,45 @@ describe("parseGitHubUrl", () => {
 
   it("returns null for non-github urls", () => {
     expect(parseGitHubUrl("https://gitlab.com/facebook/react")).toBeNull();
+  });
+});
+
+describe("resolveBranchAndPath", () => {
+  const refUrl = (repo: string, ref: string) =>
+    `https://api.github.com/repos/acme/${repo}/git/ref/heads/${ref}`;
+
+  function mockFetch(responses: Record<string, number>) {
+    const calls: string[] = [];
+    const fetchMock = ((url: string) => {
+      calls.push(url);
+      const status = responses[url] ?? 404;
+      return Promise.resolve({ ok: status < 400, status, headers: new Headers(), json: () => Promise.resolve({}) } as unknown as Response);
+    }) as typeof fetch;
+    vi.stubGlobal("fetch", fetchMock);
+    return calls;
+  }
+
+  it("resolves a multi-segment branch (branch names can contain '/')", async () => {
+    mockFetch({ [refUrl("app", "feature")]: 404, [refUrl("app", "feature/auth")]: 200 });
+    const res = await resolveBranchAndPath("acme", "app", ["feature", "auth"]);
+    expect(res).toEqual({ branch: "feature/auth", path: "" });
+  });
+
+  it("splits branch and path when only the single-segment branch exists", async () => {
+    mockFetch({ [refUrl("app", "main")]: 200 });
+    const res = await resolveBranchAndPath("acme", "app", ["main", "src", "lib"]);
+    expect(res).toEqual({ branch: "main", path: "src/lib" });
+  });
+
+  it("returns null when no prefix is an existing branch", async () => {
+    mockFetch({});
+    const res = await resolveBranchAndPath("acme", "app", ["main", "src"]);
+    expect(res).toBeNull();
+  });
+
+  it("propagates rate-limit errors instead of treating them as 'branch missing'", async () => {
+    mockFetch({ [refUrl("app", "main")]: 403 });
+    await expect(resolveBranchAndPath("acme", "app", ["main", "src"])).rejects.toThrow(/Rate limit/);
   });
 });
 

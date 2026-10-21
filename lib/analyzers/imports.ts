@@ -82,26 +82,31 @@ export function findCircularDependencies(nodes: string[], edges: { source: strin
   for (const e of edges) adj.get(e.source)?.push(e.target);
 
   const cycles: [string, string][] = [];
-  
+  const seen = new Set<string>(); // report each edge pair once, even discovered from different start nodes
+
   for (const startNode of nodes) {
     const visited = new Set<string>();
     const stack = new Set<string>();
-    
+
     const dfs = (node: string) => {
       visited.add(node);
       stack.add(node);
-      
+
       const neighbors = adj.get(node) || [];
       for (const neighbor of neighbors) {
         if (!visited.has(neighbor)) {
           dfs(neighbor);
         } else if (stack.has(neighbor)) {
-          cycles.push([node, neighbor]);
+          const key = [node, neighbor].sort().join("<>");
+          if (!seen.has(key)) {
+            seen.add(key);
+            cycles.push([node, neighbor]);
+          }
         }
       }
       stack.delete(node);
     };
-    
+
     dfs(startNode);
   }
   
